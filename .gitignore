@@ -21,3 +21,16 @@ desktop.ini
 
 # Archivos temporales de Word
 ~$*
+
+# Artefactos de LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+compile_*.txt
+
+# Documentos de trabajo y revision
+Feedback docente entregable I.txt
+G10 · Revisión del entregable final (Shopytics).xlsx
+Enlace overleaf.txt
