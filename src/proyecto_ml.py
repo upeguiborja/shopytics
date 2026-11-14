@@ -44,7 +44,7 @@ from sklearn.svm import SVC
 
 SEMILLA = 42
 RAIZ = Path(__file__).resolve().parent.parent
-CSV = RAIZ / "clipboard_1790819347953_online_shoppers_intention.csv"
+CSV = RAIZ / "data" / "online_shoppers_intention.csv"
 
 NUMERICAS = [
     "Administrative",
@@ -218,6 +218,42 @@ class TransformadorLog(BaseEstimator, TransformerMixin):
         return np.asarray(input_features, dtype=object)
 
 
+class TransformadorUMAP(BaseEstimator, TransformerMixin):
+    """Envoltorio de UMAP compatible con Pipeline; se ajusta solo con train."""
+
+    def __init__(self, n_components=10, n_neighbors=15, min_dist=0.1, random_state=SEMILLA):
+        self.n_components = n_components
+        self.n_neighbors = n_neighbors
+        self.min_dist = min_dist
+        self.random_state = random_state
+
+    def fit(self, X, y=None):
+        try:
+            import umap
+        except ImportError as exc:
+            raise ImportError(
+                "Instale umap-learn para usar TransformadorUMAP: pip install umap-learn"
+            ) from exc
+        self.modelo_ = umap.UMAP(
+            n_components=self.n_components,
+            n_neighbors=self.n_neighbors,
+            min_dist=self.min_dist,
+            random_state=self.random_state,
+        )
+        self.modelo_.fit(X)
+        return self
+
+    def transform(self, X):
+        return self.modelo_.transform(X)
+
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        return self.transform(X)
+
+    def get_feature_names_out(self, input_features=None):
+        return np.asarray([f"umap_{i}" for i in range(self.n_components)], dtype=object)
+
+
 def construir_preprocesador(
     usar_log: bool = True,
     incluir_pagevalues: bool = True,
@@ -272,7 +308,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
     )
     mallas["Regresion_logistica"] = {
         "pre__num__log__usar_log": [True, False],
-        "clf__C": [0.01, 0.1, 1, 10],
+        "clf__C": [0.01, 0.1, 1, 10, 100],
         "clf__class_weight": [None, "balanced"],
     }
 
@@ -284,7 +320,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
     )
     mallas["kNN"] = {
         "pre__num__log__usar_log": [True, False],
-        "clf__n_neighbors": [5, 15, 31],
+        "clf__n_neighbors": [5, 15, 31, 45, 61, 81, 101],
         "clf__weights": ["uniform", "distance"],
         "clf__p": [1, 2],
     }
@@ -302,7 +338,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
     )
     mallas["RandomForest"] = {
         "pre__num__log__usar_log": [True, False],
-        "clf__max_depth": [None, 12],
+        "clf__max_depth": [None, 12, 20, 30],
         "clf__min_samples_leaf": [1, 5],
         "clf__max_features": ["sqrt", 0.5],
         "clf__class_weight": [None, "balanced"],
@@ -328,7 +364,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
         "pre__num__log__usar_log": [True, False],
         "clf__hidden_layer_sizes": [(32,), (64,), (64, 32)],
         "clf__alpha": [0.0001, 0.01],
-        "clf__learning_rate_init": [0.001, 0.01],
+        "clf__learning_rate_init": [0.001, 0.01, 0.03, 0.1],
     }
 
     modelos["SVM"] = Pipeline(
@@ -337,22 +373,31 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
             ("clf", SVC(probability=False, random_state=SEMILLA)),
         ]
     )
-    mallas["SVM"] = {
-        "pre__num__log__usar_log": [True, False],
-        "clf__kernel": ["linear", "rbf"],
-        "clf__C": [0.1, 1, 10],
-        "clf__gamma": ["scale", 0.01],
-        "clf__class_weight": [None, "balanced"],
-    }
+    mallas["SVM"] = [
+        {
+            "pre__num__log__usar_log": [True, False],
+            "clf__kernel": ["linear"],
+            "clf__C": [0.1, 1, 10, 30, 100],
+            "clf__class_weight": [None, "balanced"],
+        },
+        {
+            "pre__num__log__usar_log": [True, False],
+            "clf__kernel": ["rbf"],
+            "clf__C": [0.1, 1, 10, 30, 100],
+            "clf__gamma": ["scale", 0.01, 0.001],
+            "clf__class_weight": [None, "balanced"],
+        },
+    ]
     return modelos, mallas
 
 
 def contar_combinaciones(mallas: dict) -> pd.DataFrame:
     filas = []
     for m, g in mallas.items():
-        n = 1
-        for v in g.values():
-            n *= len(v)
+        if isinstance(g, list):
+            n = sum(int(np.prod([len(v) for v in grid.values()])) for grid in g)
+        else:
+            n = int(np.prod([len(v) for v in g.values()]))
         filas.append({"modelo": m, "combinaciones": n})
     return pd.DataFrame(filas)
 
