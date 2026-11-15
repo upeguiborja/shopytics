@@ -1,0 +1,4 @@
+# Dependencias opcionales para generar el informe DOCX/PDF con Word.
+# Solo se necesitan en Windows y no forman parte del flujo LaTeX.
+-r requirements.txt
+pywin32>=306
