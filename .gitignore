@@ -13,11 +13,15 @@ venv/
 guia_proyecto_del_curso_202602.pdf
 Guía Entregable I – Predicción de la intención de compra (UCI #468).pdf
 Primera_entrega_modelos_II-2.pdf
+Primera_entrega_modelos_II/
 
 # Sistema
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# Herramientas y estado local
+.kilo/
 
 # Archivos temporales de Word
 ~$*
