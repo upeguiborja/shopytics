@@ -1,0 +1,5 @@
+{
+  "modelo": "RandomForest",
+  "criterio": "mayor AP en validacion; la prueba no participa",
+  "AP_validacion": 0.7247122236223896
+}
