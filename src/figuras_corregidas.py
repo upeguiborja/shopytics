@@ -1,6 +1,6 @@
 import argparse
 import json
-import sys
+import warnings
 from pathlib import Path
 
 import matplotlib
@@ -13,7 +13,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _argumentos():
+def _argumentos(argv=None):
     p = argparse.ArgumentParser(
         description="Regenera las figuras del informe del Entregable II."
     )
@@ -35,15 +35,13 @@ def _argumentos():
         default=ROOT / "informe_entregable_II_latex" / "figuras",
         help="Carpeta de salida de las figuras.",
     )
-    return p.parse_args()
+    return p.parse_args(argv)
 
 
-ARGS = _argumentos()
-RES = ARGS.resultados
-CVEXT = ARGS.mallas or (RES / "mallas_ext")
+RES = ROOT / "resultados_corregidos"
+CVEXT = RES / "mallas_ext"
 ORIG = ROOT / "resultados"
-FIG = ARGS.figuras
-FIG.mkdir(parents=True, exist_ok=True)
+FIG = ROOT / "informe_entregable_II_latex" / "figuras"
 
 plt.rcParams.update({"figure.dpi": 200, "savefig.dpi": 200, "savefig.bbox": "tight",
                      "font.size": 8.5, "axes.titlesize": 9, "axes.labelsize": 8.5})
@@ -91,7 +89,7 @@ def combinar_cv():
 
 
 def fig_clases():
-    aud = json.loads((ORIG / "auditoria.json").read_text(encoding="utf-8"))
+    aud = json.loads(_archivo_auditoria("auditoria.json").read_text(encoding="utf-8"))
     clases = aud["clases"]
     fig, ax = plt.subplots(figsize=(3.5, 2.8))
     etq = ["Sin compra", "Compra"]
@@ -109,7 +107,7 @@ def fig_clases():
 
 
 def fig_mensual():
-    mes = pd.read_csv(ORIG / "cobertura_mensual_train.csv").sort_values("tasa_compra", ascending=False)
+    mes = pd.read_csv(_archivo_auditoria("cobertura_mensual_train.csv")).sort_values("tasa_compra", ascending=False)
     fig, ax = plt.subplots(figsize=(5.2, 2.8))
     ax.bar(mes["Month"], mes["sesiones"], color="#9ecae1", label="Sesiones")
     ax.set_xlabel("Mes de la sesión")
@@ -297,13 +295,36 @@ def fig_specialday():
     plt.close(fig)
 
 
-fig_clases()
-fig_mensual()
-fig_hiperparametros()
-fig_train_val()
-fig_pr_roc()
-fig_confusion()
-fig_ap_ic()
-fig_pagevalues()
-fig_specialday()
-print("Figuras en", FIG)
+def _archivo_auditoria(nombre):
+    archivo = RES / nombre
+    if not archivo.exists():
+        archivo = ORIG / nombre
+        warnings.warn(f"No existe {RES / nombre}; se usa el archivo histórico {archivo}.", stacklevel=2)
+    return archivo
+
+
+def generar(resultados, mallas=None, figuras=None):
+    global RES, CVEXT, FIG
+    RES = Path(resultados)
+    CVEXT = Path(mallas) if mallas is not None else RES / "mallas_ext"
+    FIG = Path(figuras) if figuras is not None else ROOT / "informe_entregable_II_latex" / "figuras"
+    FIG.mkdir(parents=True, exist_ok=True)
+    fig_clases()
+    fig_mensual()
+    fig_hiperparametros()
+    fig_train_val()
+    fig_pr_roc()
+    fig_confusion()
+    fig_ap_ic()
+    fig_pagevalues()
+    fig_specialday()
+    print("Figuras en", FIG)
+
+
+def main(argv=None):
+    args = _argumentos(argv)
+    generar(args.resultados, mallas=args.mallas, figuras=args.figuras)
+
+
+if __name__ == "__main__":
+    main()
