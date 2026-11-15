@@ -1,0 +1,9 @@
+* text=auto
+*.csv text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.tex text eol=lf
+*.md text eol=lf
+*.png binary
+*.pdf binary
+*.xlsx binary
