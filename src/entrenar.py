@@ -89,10 +89,13 @@ def ejecutar_escenario(nombre, X, y, itr, iva, ite, cv, incluir_pagevalues=True,
     return resultados, cv_df, mallas
 
 
-def metricas_particiones(resultados, X, y, itr, iva, ite):
+def metricas_particiones(resultados, X, y, itr, iva, ite,
+                         particiones=("entrenamiento", "validacion", "test")):
     filas = []
+    indices = {"entrenamiento": itr, "validacion": iva, "test": ite}
     for nombre, res in resultados.items():
-        for part, ix in [("entrenamiento", itr), ("validacion", iva), ("test", ite)]:
+        for part in particiones:
+            ix = indices[part]
             d = evaluar(res, X.iloc[ix], y.iloc[ix], part)
             filas.append(d)
     return pd.DataFrame(filas)
@@ -164,8 +167,8 @@ def main():
     log(f"Referencia Dummy (clase mayoritaria): AP={pos_rate:.4f} en validacion")
 
     log("\n=== Metricas train / validacion / test ===")
-    met = metricas_particiones(resultados, X, y, itr, iva, ite)
-    met.to_csv(DIR_RES / "metricas_particiones.csv", index=False)
+    met = metricas_particiones(resultados, X, y, itr, iva, ite,
+                               particiones=("entrenamiento", "validacion"))
 
     # Ganador por AP de validacion
     val = met[met.particion == "validacion"].sort_values("AP", ascending=False)
@@ -175,7 +178,7 @@ def main():
         json.dumps(
             {
                 "modelo": ganador,
-                "criterio": "mayor AP media de CV por familia; mayor AP en validacion entre finalistas",
+                "criterio": "mayor AP en validacion entre las cinco familias; la prueba no participa",
                 "AP_validacion": float(val.iloc[0]["AP"]),
             },
             ensure_ascii=False,
@@ -187,29 +190,6 @@ def main():
     log("\n=== Curvas PR/ROC en validacion ===")
     cur = curvas(resultados, X, y, iva)
     (DIR_RES / "curvas_validacion.json").write_text(json.dumps(cur), encoding="utf-8")
-
-    log("\n=== Matrices de confusion en test ===")
-    mc = {}
-    for m, r in resultados.items():
-        cm = matriz_confusion(r, X.iloc[ite], y.iloc[ite])
-        mc[m] = cm.tolist()
-        log(f"{m}:\n{cm}")
-    (DIR_RES / "matrices_confusion_test.json").write_text(json.dumps(mc), encoding="utf-8")
-
-    log("\n=== Intervalos de confianza bootstrap (2000 replicas) ===")
-    filas_ic = []
-    for m, r in resultados.items():
-        for part, ix in [("entrenamiento", itr), ("validacion", iva), ("test", ite)]:
-            yt = y.iloc[ix].to_numpy()
-            yp = predecir(r.modelo, X.iloc[ix])
-            ys = puntuacion(r.modelo, X.iloc[ix])
-            ic = bootstrap_ic(yt, yp, ys)
-            ic["modelo"] = m
-            ic["particion"] = part
-            filas_ic.append(ic[["modelo", "particion", "metrica", "media_bootstrap", "ic_inferior", "ic_superior"]])
-            log(f"  {m} / {part}: IC calculados")
-    ic_df = pd.concat(filas_ic, ignore_index=True)
-    ic_df.to_csv(DIR_RES / "metricas_intervalos_confianza.csv", index=False)
 
     # Equivalencia numerica vs ordinal de SpecialDay
     sd = X["SpecialDay"].to_numpy()
@@ -236,8 +216,8 @@ def main():
         "sin_pagevalues", X, y, itr, iva, ite, cv, incluir_pagevalues=False
     )
     cv_sp.to_csv(DIR_RES / "cv_sin_pagevalues.csv", index=False)
-    met_sp = metricas_particiones(res_sp, X, y, itr, iva, ite)
-    met_sp = met_sp[met_sp.particion.isin(["entrenamiento", "validacion"])]
+    met_sp = metricas_particiones(res_sp, X, y, itr, iva, ite,
+                                  particiones=("entrenamiento", "validacion"))
     met_sp.to_csv(DIR_RES / "sensibilidad_sin_pagevalues.csv", index=False)
     comp = []
     for m in resultados:
@@ -262,8 +242,8 @@ def main():
         "sin_specialday", X, y, itr, iva, ite, cv,
         incluir_specialday=False, params_fijos=params,
     )
-    abl = metricas_particiones(res_abl, X, y, itr, iva, ite)
-    abl = abl[abl.particion.isin(["entrenamiento", "validacion"])]
+    abl = metricas_particiones(res_abl, X, y, itr, iva, ite,
+                               particiones=("entrenamiento", "validacion"))
     abl.to_csv(DIR_RES / "ablacion_sin_specialday.csv", index=False)
     comparacion_abl = []
     for m in resultados:
@@ -281,6 +261,38 @@ def main():
         DIR_RES / "comparacion_specialday.csv", index=False
     )
     log(pd.DataFrame(comparacion_abl).to_string(index=False))
+
+    met_test = metricas_particiones(resultados, X, y, itr, iva, ite, particiones=("test",))
+    met = pd.concat([met, met_test], ignore_index=True)
+    orden_modelo = {nombre: i for i, nombre in enumerate(resultados)}
+    orden_particion = {nombre: i for i, nombre in enumerate(("entrenamiento", "validacion", "test"))}
+    met = met.sort_values(["modelo", "particion"], key=lambda s: s.map(
+        orden_modelo if s.name == "modelo" else orden_particion
+    )).reset_index(drop=True)
+    met.to_csv(DIR_RES / "metricas_particiones.csv", index=False)
+
+    log("\n=== Matrices de confusion en test ===")
+    mc = {}
+    for m, r in resultados.items():
+        cm = matriz_confusion(r, X.iloc[ite], y.iloc[ite])
+        mc[m] = cm.tolist()
+        log(f"{m}:\n{cm}")
+    (DIR_RES / "matrices_confusion_test.json").write_text(json.dumps(mc), encoding="utf-8")
+
+    log("\n=== Intervalos de confianza bootstrap (2000 replicas) ===")
+    filas_ic = []
+    for m, r in resultados.items():
+        for part, ix in [("entrenamiento", itr), ("validacion", iva), ("test", ite)]:
+            yt = y.iloc[ix].to_numpy()
+            yp = predecir(r.modelo, X.iloc[ix])
+            ys = puntuacion(r.modelo, X.iloc[ix])
+            ic = bootstrap_ic(yt, yp, ys)
+            ic["modelo"] = m
+            ic["particion"] = part
+            filas_ic.append(ic[["modelo", "particion", "metrica", "media_bootstrap", "ic_inferior", "ic_superior"]])
+            log(f"  {m} / {part}: IC calculados")
+    ic_df = pd.concat(filas_ic, ignore_index=True)
+    ic_df.to_csv(DIR_RES / "metricas_intervalos_confianza.csv", index=False)
 
     # Manifiesto
     manifiesto = {
