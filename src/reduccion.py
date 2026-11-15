@@ -13,6 +13,7 @@ import sys
 import time
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -21,8 +22,10 @@ from proyecto_ml import (  # noqa: E402
     CSV,
     SEMILLA,
     TransformadorUMAP,
+    bootstrap_diferencia,
     bootstrap_ic,
     cargar_datos,
+    construir_modelos,
     construir_preprocesador,
     metricas,
     particionar,
@@ -33,43 +36,18 @@ from sklearn.decomposition import PCA  # noqa: E402
 from sklearn.ensemble import RandomForestClassifier  # noqa: E402
 from sklearn.neural_network import MLPClassifier  # noqa: E402
 from sklearn.pipeline import Pipeline  # noqa: E402
+from sklearn.metrics import average_precision_score, roc_auc_score  # noqa: E402
+from configuracion_final import PARAMS  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 OUT = RAIZ / "resultados_corregidos"
-OUT.mkdir(parents=True, exist_ok=True)
-
-# Hiperparametros ganadores de la seccion 1 (tab:mejores del informe).
-PARAMS = {
-    "RandomForest": dict(
-        max_depth=12,
-        max_features="sqrt",
-        min_samples_leaf=1,
-        class_weight=None,
-        n_estimators=300,
-        random_state=SEMILLA,
-        n_jobs=1,
-    ),
-    "MLP": dict(
-        hidden_layer_sizes=(64,),
-        alpha=0.0001,
-        learning_rate_init=0.01,
-        solver="adam",
-        max_iter=500,
-        early_stopping=True,
-        validation_fraction=0.15,
-        n_iter_no_change=20,
-        random_state=SEMILLA,
-    ),
-}
-
-
 def clasificador(nombre):
-    if nombre == "RandomForest":
-        return RandomForestClassifier(**PARAMS[nombre])
-    return MLPClassifier(**PARAMS[nombre])
+    params = {k.removeprefix("clf__"): v for k, v in PARAMS[nombre].items()
+              if k.startswith("clf__")}
+    return (RandomForestClassifier if nombre == "RandomForest" else MLPClassifier)(**params)
 
 
-def evaluar_modelo(nombre, modelo, X, y, itr, iva, ite):
+def evaluar_modelo(nombre, modelo, X, y, itr, iva, ite, puntuaciones):
     t0 = time.time()
     modelo.fit(X.iloc[itr], y.iloc[itr])
     tiempo = time.time() - t0
@@ -78,6 +56,7 @@ def evaluar_modelo(nombre, modelo, X, y, itr, iva, ite):
         yt = y.iloc[ix].to_numpy()
         yp = predecir(modelo, X.iloc[ix])
         ys = puntuacion(modelo, X.iloc[ix])
+        puntuaciones[(nombre, particion)] = ys
         d = metricas(yt, yp, ys)
         fila = {
             "modelo": nombre,
@@ -98,7 +77,11 @@ def evaluar_modelo(nombre, modelo, X, y, itr, iva, ite):
     return filas
 
 
-def main():
+def main(resultados=None):
+    global OUT
+    if resultados is not None:
+        OUT = Path(resultados)
+    OUT.mkdir(parents=True, exist_ok=True)
     df = cargar_datos(CSV)
     _, X, y, itr, iva, ite = particionar(df)
 
@@ -110,6 +93,23 @@ def main():
 
     filas = []
     componentes = {}
+    puntuaciones = {}
+
+    # Reajustar las bases para comparar sobre exactamente las mismas observaciones.
+    modelos_base, _ = construir_modelos()
+    base_ref = pd.read_csv(OUT / "metricas_particiones.csv")
+    for nombre in ["RandomForest", "MLP"]:
+        modelo = modelos_base[nombre].set_params(**PARAMS[nombre])
+        modelo.fit(X.iloc[itr], y.iloc[itr])
+        for particion, ix in [("validacion", iva), ("test", ite)]:
+            score = puntuacion(modelo, X.iloc[ix])
+            puntuaciones[(nombre, particion)] = score
+            ref = base_ref[(base_ref.modelo == nombre) & (base_ref.particion == particion)]
+            if len(ref) != 1:
+                raise ValueError(f"Falta base en metricas_particiones.csv: {nombre}, {particion}")
+            for metrica, fn in [("AP", average_precision_score), ("ROC_AUC", roc_auc_score)]:
+                if not np.isclose(fn(y.iloc[ix], score), ref.iloc[0][metrica], atol=5e-4, rtol=0):
+                    raise ValueError(f"{metrica} base no coincide: {nombre}, {particion}")
 
     # PCA con varianza explicada del 95 %.
     for nombre in ["RandomForest", "MLP"]:
@@ -120,7 +120,8 @@ def main():
                 ("clf", clasificador(nombre)),
             ]
         )
-        filas += evaluar_modelo(f"PCA-{nombre}", pipe, X, y, itr, iva, ite)
+        pipe.set_params(**{k: v for k, v in PARAMS[nombre].items() if k.startswith("pre__")})
+        filas += evaluar_modelo(f"PCA-{nombre}", pipe, X, y, itr, iva, ite, puntuaciones)
         pca = pipe.named_steps["pca"]
         componentes[f"PCA-{nombre}"] = int(pca.n_components_)
         if nombre == "RandomForest":
@@ -148,7 +149,8 @@ def main():
                 ("clf", clasificador(nombre)),
             ]
         )
-        filas += evaluar_modelo(f"UMAP10-{nombre}", pipe, X, y, itr, iva, ite)
+        pipe.set_params(**{k: v for k, v in PARAMS[nombre].items() if k.startswith("pre__")})
+        filas += evaluar_modelo(f"UMAP10-{nombre}", pipe, X, y, itr, iva, ite, puntuaciones)
         componentes[f"UMAP10-{nombre}"] = 10
         print(f"UMAP10-{nombre}: 10 componentes")
 
@@ -157,29 +159,6 @@ def main():
         lambda m: 100 * (1 - componentes[m] / n_original)
     )
     tabla.to_csv(OUT / "reduccion_dimension.csv", index=False)
-
-    # Comparacion con la linea base (resultados_corregidos/metricas_particiones.csv).
-    base = pd.read_csv(OUT / "metricas_particiones.csv")
-    base = (
-        base[base.particion.isin(["validacion", "test"])][
-            ["modelo", "particion", "AP", "ROC_AUC", "F1"]
-        ]
-        .rename(
-            columns={
-                "modelo": "modelo_base",
-                "AP": "AP_base",
-                "ROC_AUC": "ROC_AUC_base",
-                "F1": "F1_base",
-            }
-        )
-    )
-    comp = tabla.copy()
-    comp["modelo_base"] = comp["modelo"].str.split("-").str[-1]
-    comp = comp.merge(base, on=["modelo_base", "particion"], how="left")
-    comp["delta_AP"] = comp["AP"] - comp["AP_base"]
-    comp["delta_ROC_AUC"] = comp["ROC_AUC"] - comp["ROC_AUC_base"]
-    comp["delta_F1"] = comp["F1"] - comp["F1_base"]
-    comp.to_csv(OUT / "reduccion_comparacion.csv", index=False)
 
     # UMAP 2D para visualizacion.
     pre = construir_preprocesador(usar_log=True)
@@ -215,8 +194,33 @@ def main():
                 ("clf", clasificador(nombre)),
             ]
         )
-        filas_2d += evaluar_modelo(f"UMAP2-{nombre}", pipe, X, y, itr, iva, ite)
-    pd.DataFrame(filas_2d).to_csv(OUT / "reduccion_umap2.csv", index=False)
+        pipe.set_params(**{k: v for k, v in PARAMS[nombre].items() if k.startswith("pre__")})
+        filas_2d += evaluar_modelo(f"UMAP2-{nombre}", pipe, X, y, itr, iva, ite, puntuaciones)
+    tabla_2d = pd.DataFrame(filas_2d)
+    tabla_2d.to_csv(OUT / "reduccion_umap2.csv", index=False)
+
+    tabla_2d["reduccion_pct"] = 100 * (1 - 2 / n_original)
+    comp = pd.concat([tabla, tabla_2d], ignore_index=True)
+    base = base_ref[base_ref.particion.isin(["validacion", "test"])][
+        ["modelo", "particion", "AP", "ROC_AUC", "F1"]
+    ].rename(columns={"modelo": "modelo_base", "AP": "AP_base",
+                      "ROC_AUC": "ROC_AUC_base", "F1": "F1_base"})
+    comp["modelo_base"] = comp["modelo"].str.split("-").str[-1]
+    comp = comp.merge(base, on=["modelo_base", "particion"], how="left", validate="many_to_one")
+    for metrica in ["AP", "ROC_AUC", "F1"]:
+        comp[f"delta_{metrica}"] = comp[metrica] - comp[f"{metrica}_base"]
+    indices = {"validacion": iva, "test": ite}
+    for i, fila in comp.iterrows():
+        yt = y.iloc[indices[fila.particion]].to_numpy()
+        for metrica, fn in [("AP", average_precision_score), ("ROC_AUC", roc_auc_score)]:
+            puntual, media, inferior, superior = bootstrap_diferencia(
+                yt, puntuaciones[(fila.modelo, fila.particion)],
+                puntuaciones[(fila.modelo_base, fila.particion)], fn)
+            comp.loc[i, f"delta_{metrica}"] = puntual
+            comp.loc[i, f"delta_{metrica}_media_bootstrap"] = media
+            comp.loc[i, f"delta_{metrica}_ic_inferior"] = inferior
+            comp.loc[i, f"delta_{metrica}_ic_superior"] = superior
+    comp.to_csv(OUT / "reduccion_comparacion.csv", index=False)
 
     print(tabla.to_string(index=False))
     print("Resultados en", OUT)

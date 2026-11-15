@@ -457,6 +457,28 @@ def bootstrap_ic(y_true, y_pred, y_score, n_boot=2000, semilla=SEMILLA) -> pd.Da
     )
 
 
+def bootstrap_diferencia(y_true, score_a, score_b, metrica, n_boot=2000, semilla=SEMILLA):
+    """Diferencia puntual e IC pareado, condicionado a las puntuaciones fijas."""
+    y_true = np.asarray(y_true)
+    score_a = np.asarray(score_a)
+    score_b = np.asarray(score_b)
+    if y_true.ndim != 1 or score_a.shape != y_true.shape or score_b.shape != y_true.shape:
+        raise ValueError("Las etiquetas y puntuaciones deben ser vectores de igual longitud")
+    pos = np.flatnonzero(y_true == 1)
+    neg = np.flatnonzero(y_true == 0)
+    if not len(pos) or not len(neg) or len(pos) + len(neg) != len(y_true) or n_boot < 1:
+        raise ValueError("Se requieren ambas clases binarias y al menos una replica")
+    rng = np.random.default_rng(semilla)
+    diferencias = np.empty(n_boot)
+    for i in range(n_boot):
+        ix = np.concatenate((rng.choice(pos, len(pos), replace=True),
+                             rng.choice(neg, len(neg), replace=True)))
+        diferencias[i] = metrica(y_true[ix], score_a[ix]) - metrica(y_true[ix], score_b[ix])
+    puntual = metrica(y_true, score_a) - metrica(y_true, score_b)
+    inferior, superior = np.quantile(diferencias, [0.025, 0.975])
+    return float(puntual), float(diferencias.mean()), float(inferior), float(superior)
+
+
 # ---------------------------------------------------------------------------
 # Entrenamiento
 # ---------------------------------------------------------------------------
