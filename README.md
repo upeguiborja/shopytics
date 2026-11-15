@@ -20,7 +20,7 @@ El repositorio contiene el Entregable II completo:
 - **Sección 2 (20 %):** análisis individual de las 17 variables, redundancia, PCA y UMAP,
   y comparación del AP con y sin reducción de dimensión.
 
-El informe final está en LaTeX (formato IEEE, 10 páginas) y se compila con `pdflatex`.
+El informe está en LaTeX (formato IEEE) y se compila con `pdflatex`.
 
 ## Estructura del repositorio
 
@@ -29,8 +29,8 @@ El informe final está en LaTeX (formato IEEE, 10 páginas) y se compila con `pd
 ├── data/
 │   └── online_shoppers_intention.csv        # datos de entrada
 ├── informe_entregable_II_latex/
-│   ├── main.tex                             # informe IEEE (10 páginas)
-│   ├── main.pdf                             # PDF compilado
+│   ├── main.tex                             # fuente del informe IEEE
+│   ├── main.pdf                             # PDF previo; puede no coincidir con la fuente
 │   ├── IEEEtran.cls
 │   └── figuras/                             # fig01–fig13
 ├── notebooks/
@@ -41,13 +41,15 @@ El informe final está en LaTeX (formato IEEE, 10 páginas) y se compila con `pd
 │   ├── proyecto_ml.py                       # pipelines, métricas, IC, UMAP
 │   ├── auditar.py                           # auditoría y particiones
 │   ├── entrenar.py                          # búsqueda y evaluación
+│   ├── configuracion_final.py                # configuraciones históricas finales
+│   ├── evaluar_final.py                     # reproducción de configuraciones finales
 │   ├── figuras.py                           # figuras del flujo original
 │   ├── figuras_corregidas.py                # figuras del informe corregido
 │   ├── analisis_variables.py                # análisis individual y redundancia
 │   ├── reduccion.py                         # PCA, UMAP y comparación
 │   ├── figuras_reduccion.py                 # figuras de reducción
 │   └── informe.py                           # generador DOCX legado
-├── resultados/                              # resultados del flujo original
+├── resultados/                              # archivo histórico de la exploración
 ├── resultados_corregidos/                   # resultados usados en el informe
 ├── requirements.txt
 └── requirements-informe-windows.txt         # flujo DOCX opcional (Windows)
@@ -79,6 +81,10 @@ Instalación de dependencias:
 pip install -r requirements.txt
 ```
 
+Las ejecuciones históricas del informe usaron Python 3.13.5, scikit-learn 1.7.2 y
+semilla `SEMILLA = 42`. Los requisitos no fijan todas las versiones; otras versiones
+pueden producir diferencias.
+
 El flujo DOCX legado requiere además, solo en Windows:
 
 ```bash
@@ -99,16 +105,22 @@ Ejecute en orden desde `notebooks/`:
 
 ```bash
 python src/auditar.py              # auditoría y particiones
-python src/entrenar.py             # entrenamiento y evaluación (≈12 minutos)
+python src/evaluar_final.py        # configura y evalúa los modelos finales
 python src/figuras_corregidas.py   # figuras del informe corregido
 python src/analisis_variables.py   # análisis individual y redundancia
 python src/reduccion.py            # PCA, UMAP y comparación
 python src/figuras_reduccion.py    # figuras de reducción
 ```
 
-`entrenar.py` escribe en `resultados/`; las cifras del informe se conservan en
-`resultados_corregidos/`. Los scripts de figuras leen de `resultados_corregidos/` y
-escriben en `informe_entregable_II_latex/figuras/`.
+`resultados/` y `resultados_corregidos/mallas_ext/` conservan los artefactos históricos
+versionados. No ejecute `entrenar.py` para consultar el informe: regenera la búsqueda y
+las ablaciones en `resultados/` y puede sobrescribir ese archivo. Solo es necesario si
+se desea repetir la búsqueda, preferiblemente en una copia aislada.
+
+`evaluar_final.py` reajusta las configuraciones finales y escribe
+`resultados_corregidos/`, reutilizando las ablaciones archivadas. Ejecútelo antes de
+generar las figuras; `entrenar.py` es opcional y solo sirve para repetir la búsqueda.
+Los scripts de figuras escriben en `informe_entregable_II_latex/figuras/`.
 
 ### Informe LaTeX
 
@@ -126,8 +138,8 @@ En Windows con MiKTeX:
   -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-El PDF también se puede subir a Overleaf junto con `IEEEtran.cls` y `figuras/`. El enlace
-de edición no se publica en este repositorio.
+Para Overleaf, suba un ZIP con `main.tex`, `IEEEtran.cls` y `figuras/`, no el PDF
+suelto. El enlace de edición no se publica en este repositorio.
 
 ## Resultados principales
 
@@ -137,16 +149,22 @@ de edición no se publica en este repositorio.
 | AP de prueba, MLP | 0,7377 |
 | ROC-AUC de prueba, MLP | 0,9270 |
 | ROC-AUC de prueba, Random Forest | 0,9242 |
-| Diferencia pareada AP RF−MLP | +0,0104, IC 95 % [−0,0100; 0,0321] |
+| Media bootstrap pareada AP RF−MLP | +0,0104, IC 95 % [−0,0100; 0,0321] |
 | Umbral de RF por F1 | 0,3078; F1 0,6691; recall 0,7173; precisión 0,6270 |
 | Caída de AP sin `PageValues` | 0,34–0,39 |
 | PCA | 28 componentes; 61,64 % de reducción; AP 0,7352 (RF) y 0,7211 (MLP) |
 | UMAP 10 componentes | 86,30 % de reducción; AP 0,6650 (RF) y 0,6236 (MLP) |
 | UMAP 2 componentes | AP 0,6489 (RF) y 0,5762 (MLP) |
 
-Random Forest y la MLP son estadísticamente equivalentes en AP y ROC-AUC. `PageValues`
-concentra la mayor señal (AUC univariado 0,866); PCA conserva el desempeño con 61,64 %
-menos columnas, mientras UMAP lo degrada entre 8 y 16 puntos.
+No se detectó una diferencia estadísticamente significativa entre Random Forest y la MLP
+en AP ni ROC-AUC; esto no demuestra equivalencia, solo ausencia de evidencia de diferencia
+con la potencia disponible. `PageValues` presenta el mayor AUC univariado (0,866). PCA
+muestra una caída puntual de AP de hasta 1,7 puntos con 61,64 % menos columnas; las
+caídas puntuales de UMAP son de 8 a 16 puntos. Los IC pareados de ΔAP y ΔROC-AUC
+incluyen cero para PCA y quedan por debajo de cero para UMAP en esta partición.
+Los IC bootstrap disponibles son condicionales a modelos y predicciones fijos y no
+incluyen la variabilidad del entrenamiento ni de la selección del umbral. La prueba
+histórica ya fue consultada y no constituye una evaluación independiente.
 
 ## Datos y licencia
 
