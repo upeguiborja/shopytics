@@ -32,26 +32,25 @@
 \maketitle
 
 \begin{abstract}
-	Este documento integra el Entregable I corregido con las dos secciones del Entregable
-	II: el diseño experimental y los resultados de cinco familias de modelos (30\,\%) y el
-	análisis individual de variables con reducción de dimensión (20\,\%). Se usa el
+	Se evalúa la intención de compra en sesiones cerradas con cinco familias de modelos,
+	un análisis individual de variables y reducción de dimensión. Se usa el
 	\textit{Online Shoppers Purchasing Intention Dataset} (UCI \#468), con 12\,330 sesiones,
 	17 atributos predictores y una prevalencia de compra del 15,47\,\%. La tarea se formula
 	como clasificación binaria supervisada de sesiones ya cerradas, no como predicción
 	durante la sesión. El preprocesamiento y la selección de transformaciones se ajustan
 	exclusivamente dentro de los folds de entrenamiento; el 20\,\% de validación se emplea
-	para comparar finalistas y el 20\,\% de prueba se mantiene aislado. Se comparan regresión
+	para comparar finalistas; la prueba histórica ya fue consultada. Se comparan regresión
 	logística, k-NN, Random Forest, una red neuronal (MLP) y SVM con mallas ampliadas,
 	intervalos de confianza bootstrap y comparaciones pareadas. Random Forest obtiene el
 	mayor AP en prueba (0,7486) y la MLP el mayor ROC-AUC (0,9270); sin embargo, las
-	diferencias pareadas entre ambos no son significativas (AP $+0{,}0104$,
+	diferencias pareadas entre ambos no son significativas (AP $+0{,}0109$,
 	IC 95\,\% $[-0{,}0100;0{,}0321]$). La sensibilidad muestra que retirar
 	\textit{PageValues} reduce el AP entre 0,34 y 0,39, mientras que retirar
 	\textit{SpecialDay} no produce cambios apreciables. El umbral ajustado por F1 sube el
 	recall de 0,466 a 0,717 en Random Forest. En la sección del 20\,\%, el análisis
 	individual confirma el dominio de \textit{PageValues} (AUC 0,866); PCA retiene 28
-	componentes y conserva el AP dentro de 1,7 puntos, mientras UMAP lo degrada entre 8 y
-	16. Se discuten las implicaciones y limitaciones del alcance post-sesión.
+	componentes y presenta una caída puntual de AP de hasta 1,7 puntos; con UMAP la caída
+	queda entre 8 y 16 puntos. Se discuten las limitaciones del alcance post-sesión.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -82,8 +81,8 @@ sensibilidad en la Sección~\ref{sec:sensibilidad}.
 El trabajo tiene cinco aportes. Primero, define un protocolo reproducible en el que la
 imputación, la transformación logarítmica, el escalado y la codificación se ajustan
 dentro de cada fold, de modo que no hay fuga de información. Segundo, compara cinco
-familias de modelos con mallas de hiperparámetros ampliadas y con una partición de
-prueba que no participa en ninguna decisión. Tercero, reporta intervalos de confianza
+familias de modelos con mallas de hiperparámetros ampliadas, reconociendo que la prueba
+histórica ya fue consultada. Tercero, reporta intervalos de confianza
 bootstrap para AP, F1 y ROC-AUC, y comparaciones pareadas entre modelos, en lugar de
 comparar solo medias puntuales. Cuarto, analiza el umbral de decisión y la sensibilidad
 a \textit{PageValues} y \textit{SpecialDay}, dos variables que suelen discutirse sin
@@ -146,7 +145,8 @@ codifica como ordinal $k=\mathrm{round}(\textit{SpecialDay}/0{,}2)$, la estandar
 de $k$ y la de \textit{SpecialDay} son transformaciones afines y producen la misma
 matriz de diseño. Por eso el pipeline la trata como una variable numérica estandarizada
 y la ablación de la Sección~\ref{sec:sensibilidad} confirma que retirarla no cambia el
-AP de forma apreciable.
+AP de forma apreciable. Esta equivalencia es algebraica para la codificación ordinal;
+no se comparó experimentalmente con one-hot ni con otras codificaciones.
 
 \subsection{Paradigma de aprendizaje}
 
@@ -179,7 +179,10 @@ y selección mRMR y reportan 87,24\,\% de exactitud y F1 0,86 con una MLP; Necul
 validación cruzada y 0,8973 en prueba con Random Forest; Satu e Islam \cite{ref_satu}
 prueban SMOTE, tres escalados y filtros de variables y alcanzan 92,39\,\% de exactitud
 y F1 0,924; Lin \cite{ref_lin} usa SMOTE, Isolation Forest y búsqueda de
-hiperparámetros y reporta un ROC-AUC de 0,985 con CatBoost. Las cifras no son
+hiperparámetros y reporta un ROC-AUC de 0,985 con CatBoost. mRMR selecciona atributos
+relevantes con baja redundancia; ADASYN genera ejemplos sintéticos adaptativos de la
+clase minoritaria; CFS favorece conjuntos predictivos con baja correlación interna.
+Las cifras son las reportadas por los autores, no reproducidas aquí, y no son
 comparables entre sí porque cambian la partición, el balanceo y el protocolo de
 validación, y varios estudios no aclaran si el balanceo se ajusta solo con
 entrenamiento. De ahí tres decisiones de este trabajo: ajustar todo el preprocesamiento
@@ -207,7 +210,7 @@ Lin \cite{ref_lin} & SVM, XGBoost, CatBoost, red neuronal & SMOTE, Isolation For
 
 La Tabla~\ref{tab:estado} confirma que las cifras no son directamente comparables:
 cada estudio usa una partición, un balanceo y un protocolo distintos. Por eso este
-trabajo ajusta el preprocesamiento dentro de los folds, aísla la prueba y reporta
+trabajo ajusta el preprocesamiento dentro de los folds y reporta
 incertidumbre; la comparación de las cinco familias y la verificación de
 \textit{SpecialDay} retoman directamente las técnicas y advertencias de estos
 antecedentes.
@@ -293,8 +296,10 @@ con semilla fija 42. La Tabla~\ref{tab:particiones} resume el tamaño y el balan
 ajuste de hiperparámetros se realizó con validación cruzada estratificada de cinco
 folds sobre el 60\,\% de entrenamiento, de modo que cada fold conserva la proporción de
 compra. El 20\,\% de validación se empleó para comparar los finalistas y elegir el
-ganador; el 20\,\% de prueba se mantuvo aislado hasta la evaluación final y no participó
-en la selección de modelos, transformaciones ni hiperparámetros.
+ganador. El código histórico calculaba métricas de prueba antes de fijar el ganador y
+la prueba ya fue consultada: no se puede afirmar su independencia. Ordenar el código
+para fijar decisiones antes de evaluar prueba evita ese acceso en ejecuciones futuras,
+pero no recupera la independencia de los resultados históricos.
 
 \begin{table}[t]
 \centering
@@ -373,17 +378,20 @@ La métrica principal es el área bajo la curva precisión-recall (AP), calculad
 promedio de la precisión en los distintos umbrales de recall. Se complementa con el
 ROC-AUC, que mide la capacidad de ordenar las sesiones por probabilidad de compra; con
 el F1, la precisión y el recall de la clase positiva; y con la exactitud balanceada,
-que promedia el desempeño en ambas clases. El punto de referencia trivial, que siempre
-predice la clase mayoritaria, obtiene un AP igual a la prevalencia (0,156) y una
-exactitud del 84,4\,\%.
+que promedia el desempeño en ambas clases. Puntuaciones constantes producen un AP igual
+a la prevalencia de la partición (aproximadamente 0,156), sin identificarlo con el AP
+de un ranking aleatorio finito. Predecir siempre la clase mayoritaria da una exactitud
+del 84,4\,\% y recall positivo nulo.
 
-Todas las medidas se reportan con intervalos de confianza del 95\,\% estimados mediante
+Los intervalos disponibles son del 95\,\% y se estiman mediante
 bootstrap estratificado con 2\,000 réplicas, en entrenamiento, validación y prueba.
 Además de los intervalos por modelo, se realizaron comparaciones pareadas en prueba:
 para cada réplica se remuestrean por separado las clases positiva y negativa, se
 calculan las métricas de los dos modelos sobre la misma réplica y se registra la
-diferencia. Este diseño reduce la varianza de la comparación y permite afirmar si dos
-modelos se distinguen más allá de la variabilidad del muestreo.
+diferencia. Este diseño cuantifica la incertidumbre por remuestreo de observaciones,
+condicionada a modelos, transformaciones, predicciones y umbrales fijos; no incluye la
+variabilidad del entrenamiento ni de la selección del umbral. Las diferencias presentadas
+son puntuales; un IC que incluye cero no demuestra equivalencia.
 
 \section{Resultados}
 \label{sec:resultados}
@@ -452,15 +460,15 @@ la MLP (0,7134) es segunda y SVM (0,7049) supera a k-NN (0,6966).
 \label{tab:mejores}
 \scriptsize
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{p{2.9cm} p{1.5cm} p{1.3cm} p{1.5cm} p{8.8cm}}
+\begin{tabular}{p{2.9cm} p{1.5cm} p{1.3cm} p{10.3cm}}
 \toprule
-\textbf{Modelo} & \textbf{AP CV} & \textbf{Desv.} & \textbf{Tiempo (s)} & \textbf{Configuración seleccionada} \\
+\textbf{Modelo} & \textbf{AP CV} & \textbf{Desv.} & \textbf{Configuración seleccionada} \\
 \midrule
-Random Forest & 0,7532 & 0,0350 & 142,6 & \textit{max\_depth}=12; \textit{max\_features}=sqrt; \textit{min\_samples\_leaf}=1; \textit{class\_weight}=ninguno; $\log(1+x)$=sí \\
-MLP & 0,7294 & 0,0391 & 21,3 & capas $(64)$; $\alpha=0{,}0001$; \textit{learning\_rate\_init}=0,01; $\log(1+x)$=sí \\
-SVM & 0,7266 & 0,0336 & 315,8 & kernel RBF; $C=10$; $\gamma=0{,}01$; \textit{class\_weight}=ninguno; $\log(1+x)$=sí \\
-k-NN & 0,7203 & 0,0262 & 32,9 & $k=61$; \textit{weights}=distance; $p=2$; $\log(1+x)$=sí \\
-Regresión logística & 0,6897 & 0,0320 & 10,6 & $C=0{,}1$; \textit{class\_weight}=ninguno; $\log(1+x)$=sí \\
+Random Forest & 0,7532 & 0,0350 & \textit{max\_depth}=12; \textit{max\_features}=sqrt; \textit{min\_samples\_leaf}=1; \textit{class\_weight}=ninguno; $\log(1+x)$=sí \\
+MLP & 0,7294 & 0,0391 & capas $(64)$; $\alpha=0{,}0001$; \textit{learning\_rate\_init}=0,01; $\log(1+x)$=sí \\
+SVM & 0,7266 & 0,0336 & kernel RBF; $C=10$; $\gamma=0{,}01$; \textit{class\_weight}=ninguno; $\log(1+x)$=sí \\
+k-NN & 0,7203 & 0,0262 & $k=61$; \textit{weights}=distance; $p=2$; $\log(1+x)$=sí \\
+Regresión logística & 0,6897 & 0,0320 & $C=0{,}1$; \textit{class\_weight}=ninguno; $\log(1+x)$=sí \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -471,35 +479,52 @@ prueba con intervalos de confianza. Random Forest conserva el mayor AP en prueba
 (0,6956). En ROC-AUC de prueba, la MLP queda ligeramente por delante (0,9270 frente a
 0,9242 de Random Forest), pero la diferencia pareada no es significativa:
 $-0{,}0029$ con IC 95\,\% $[-0{,}0101;0{,}0040]$. En AP, la diferencia pareada
-Random Forest--MLP es $+0{,}0104$ con IC $[-0{,}0100;0{,}0321]$, que incluye el cero.
-Por lo tanto, Random Forest y la MLP no se distinguen estadísticamente en AP ni en
-ROC-AUC; Random Forest tiene el mejor valor puntual de AP y la MLP el mejor valor
+Random Forest--MLP es $+0{,}0109$ con IC $[-0{,}0100;0{,}0321]$, que incluye el cero.
+No se detectó una diferencia significativa en AP ni en ROC-AUC; esto no demuestra
+equivalencia con la potencia disponible. Random Forest tiene el mejor valor puntual de AP y la MLP el mejor valor
 puntual de ROC-AUC.
 
 \begin{table*}[t]
 \centering
-\caption{Desempeño por partición. AP en entrenamiento, validación y prueba, y métricas
-de prueba, con intervalos de confianza bootstrap del 95\,\%.}
+\caption{AP por partición, con intervalos bootstrap del 95\,\%.}
 \label{tab:desempeno}
 \scriptsize
 \renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{3.5pt}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{p{2.7cm} p{2.3cm} p{2.3cm} p{2.3cm} p{2.3cm} p{2.3cm} p{1.5cm}}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Modelo} & \makecell{\textbf{AP}\\\textbf{entrenamiento}} & \makecell{\textbf{AP}\\\textbf{validación}} & \makecell{\textbf{AP}\\\textbf{prueba}} & \makecell{\textbf{ROC-AUC}\\\textbf{prueba}} & \makecell{\textbf{F1}\\\textbf{prueba}} & \makecell{\textbf{Bal. acc}\\\textbf{prueba}} \\
+\textbf{Modelo} & \textbf{Entrenamiento} & \textbf{Validación} & \textbf{Prueba} \\
 \midrule
-Random Forest & \makecell{0,9661\\{[0,9600;0,9714]}} & \makecell{0,7247\\{[0,6855;0,7648]}} & \makecell{0,7486\\{[0,7115;0,7848]}} & \makecell{0,9242\\{[0,9098;0,9377]}} & \makecell{0,5904\\{[0,5439;0,6328]}} & 0,7225 \\
-MLP & \makecell{0,8228\\{[0,8031;0,8410]}} & \makecell{0,7134\\{[0,6709;0,7575]}} & \makecell{0,7377\\{[0,6997;0,7773]}} & \makecell{0,9270\\{[0,9143;0,9399]}} & \makecell{0,6504\\{[0,6100;0,6896]}} & 0,7747 \\
-SVM & \makecell{0,7703\\{[0,7464;0,7920]}} & \makecell{0,7049\\{[0,6612;0,7491]}} & \makecell{0,7287\\{[0,6879;0,7685]}} & \makecell{0,9020\\{[0,8829;0,9205]}} & \makecell{0,6494\\{[0,6088;0,6894]}} & 0,7736 \\
-k-NN & \makecell{1,0000\\{[1,0000;1,0000]}} & \makecell{0,6966\\{[0,6553;0,7380]}} & \makecell{0,7039\\{[0,6616;0,7460]}} & \makecell{0,9086\\{[0,8929;0,9245]}} & \makecell{0,6079\\{[0,5650;0,6509]}} & 0,7433 \\
-Regresión logística & \makecell{0,6987\\{[0,6720;0,7251]}} & \makecell{0,6841\\{[0,6392;0,7342]}} & \makecell{0,6956\\{[0,6541;0,7396]}} & \makecell{0,9110\\{[0,8950;0,9272]}} & \makecell{0,6213\\{[0,5778;0,6647]}} & 0,7545 \\
+Random Forest & \makecell{0,9661\\{[0,9600;0,9714]}} & \makecell{0,7247\\{[0,6855;0,7648]}} & \makecell{0,7486\\{[0,7115;0,7848]}} \\
+MLP & \makecell{0,8228\\{[0,8031;0,8410]}} & \makecell{0,7134\\{[0,6709;0,7575]}} & \makecell{0,7377\\{[0,6997;0,7773]}} \\
+SVM & \makecell{0,7703\\{[0,7464;0,7920]}} & \makecell{0,7049\\{[0,6612;0,7491]}} & \makecell{0,7287\\{[0,6879;0,7685]}} \\
+k-NN & \makecell{1,0000\\{[1,0000;1,0000]}} & \makecell{0,6966\\{[0,6553;0,7380]}} & \makecell{0,7039\\{[0,6616;0,7460]}} \\
+Regresión logística & \makecell{0,6987\\{[0,6720;0,7251]}} & \makecell{0,6841\\{[0,6392;0,7342]}} & \makecell{0,6956\\{[0,6541;0,7396]}} \\
 \bottomrule
-\end{tabular}}
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Métricas de prueba con umbral nativo e IC bootstrap del 95\,\%.}
+\label{tab:metricas-test}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Modelo} & \textbf{ROC-AUC} & \textbf{F1} & \textbf{Precisión} & \textbf{Recall} & \textbf{Ex. balanceada} \\
+\midrule
+Random Forest & \makecell{0,9242\\{[0,9098;0,9377]}} & \makecell{0,5904\\{[0,5439;0,6328]}} & \makecell{0,8054\\{[0,7578;0,8557]}} & \makecell{0,4660\\{[0,4162;0,5157]}} & \makecell{0,7225\\{[0,6984;0,7469]}} \\
+MLP & \makecell{0,9270\\{[0,9143;0,9399]}} & \makecell{0,6504\\{[0,6100;0,6896]}} & \makecell{0,7220\\{[0,6790;0,7677]}} & \makecell{0,5916\\{[0,5445;0,6414]}} & \makecell{0,7747\\{[0,7503;0,7998]}} \\
+SVM & \makecell{0,9020\\{[0,8829;0,9205]}} & \makecell{0,6494\\{[0,6088;0,6894]}} & \makecell{0,7235\\{[0,6803;0,7700]}} & \makecell{0,5890\\{[0,5393;0,6387]}} & \makecell{0,7736\\{[0,7488;0,7989]}} \\
+k-NN & \makecell{0,9086\\{[0,8929;0,9245]}} & \makecell{0,6079\\{[0,5650;0,6509]}} & \makecell{0,7246\\{[0,6783;0,7727]}} & \makecell{0,5236\\{[0,4738;0,5734]}} & \makecell{0,7433\\{[0,7189;0,7682]}} \\
+Regresión logística & \makecell{0,9110\\{[0,8950;0,9272]}} & \makecell{0,6213\\{[0,5778;0,6647]}} & \makecell{0,7143\\{[0,6688;0,7621]}} & \makecell{0,5497\\{[0,5000;0,5995]}} & \makecell{0,7545\\{[0,7288;0,7807]}} \\
+\bottomrule
+\end{tabular}
 \end{table*}
 
 Las comparaciones pareadas confirman el orden. Random Forest supera a SVM en AP por
-$+0{,}0197$ con IC $[-0{,}0000;0{,}0403]$, en el borde de la significancia, y en
+$+0{,}0197$ con IC $[-0{,}0000;0{,}0403]$, que incluye cero por un margen mínimo, y en
 ROC-AUC por $+0{,}0222$ con IC $[0{,}0086;0{,}0367]$. Supera a k-NN en AP por
 $+0{,}0442$ con IC $[0{,}0235;0{,}0657]$ y a la regresión logística por $+0{,}0520$
 con IC $[0{,}0252;0{,}0779]$. La MLP supera a SVM en ROC-AUC por $+0{,}0252$ con IC
@@ -508,40 +533,13 @@ $[0{,}0126;0{,}0388]$, aunque en AP la diferencia no es significativa
 el grupo de finalistas; SVM queda un escalón por debajo y k-NN y la regresión
 logística cierran la comparación.
 
-\begin{figure*}[t]
-\centering
-\begin{minipage}[t]{0.49\textwidth}
-\centering
-\includegraphics[width=\linewidth]{figuras/fig05_curvas_pr.png}
-\centerline{(a)}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.49\textwidth}
-\centering
-\includegraphics[width=\linewidth]{figuras/fig06_curvas_roc.png}
-\centerline{(b)}
-\end{minipage}
-\caption{Curvas en validación. (a) Precisión-recall; la línea punteada es la tasa base
-(0,156). (b) ROC; la diagonal representa un clasificador aleatorio.}
-\label{fig:curvas}
-\end{figure*}
-
-La Fig.~\ref{fig:curvas} muestra las curvas precisión-recall y ROC en validación. Las
-curvas de Random Forest y la MLP se cruzan en la zona de alto recall, lo que explica
+Las curvas precisión-recall de Random Forest y la MLP en validación se cruzan en la zona de alto recall, lo que explica
 que sus AP sean cercanos; la MLP conserva una ventaja pequeña en ROC-AUC porque ordena
 mejor las sesiones en la zona de baja tasa de falsos positivos. Los intervalos de la
 Tabla~\ref{tab:desempeno} se superponen tanto en validación como en prueba, mientras
 que la regresión logística queda por debajo de forma más clara.
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{figuras/fig07_matrices_confusion_test.png}
-\caption{Matrices de confusión en prueba con el umbral nativo. Las filas son la clase
-real y las columnas la predicción; ``No'' es sin compra y ``Sí'' es compra.}
-\label{fig:confusion}
-\end{figure*}
-
-La Fig.~\ref{fig:confusion} presenta las matrices de confusión con el umbral nativo.
-Random Forest privilegia la precisión: acierta 2\,016 de 2\,059 sesiones sin compra y
+Con el umbral nativo, Random Forest privilegia la precisión: acierta 2\,016 de 2\,059 sesiones sin compra y
 178 de 382 compras, con 204 falsos negativos y 43 falsos positivos. La MLP acierta 226
 compras y 1\,972 sesiones sin compra, con 156 falsos negativos y 87 falsos positivos.
 SVM acierta 225 compras y 1\,973 sesiones sin compra. El perfil de Random Forest es
@@ -552,25 +550,27 @@ positivos. La elección depende del costo relativo de cada error.
 
 El umbral nativo de 0,5 (o 0 en la función de decisión de SVM) no es necesariamente el
 mejor para una clase minoritaria. La Tabla~\ref{tab:umbral} compara el F1 con el umbral
-nativo y con un umbral elegido en validación para maximizar F1. El umbral se selecciona
+nativo (Tabla~\ref{tab:metricas-test}) y con un umbral elegido en validación para maximizar F1. El umbral se selecciona
 con la curva precisión-recall de validación y se aplica una sola vez a prueba.
 
 \begin{table*}[t]
 \centering
-\caption{Efecto del umbral elegido en validación por F1 máximo. Las métricas se miden
-en prueba. En SVM el umbral se aplica a la función de decisión, no a una probabilidad.}
+\caption{Efecto del umbral elegido en validación por F1 máximo. Métricas de prueba con
+IC bootstrap del 95\,\%, condicionados al umbral y al modelo fijos. En SVM el umbral se
+aplica a la función de decisión, no a una probabilidad.}
 \label{tab:umbral}
 \scriptsize
 \renewcommand{\arraystretch}{1.08}
-\begin{tabular}{p{3.0cm} p{2.2cm} p{2.2cm} p{2.4cm} p{2.4cm} p{2.4cm}}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Modelo} & \textbf{Umbral} & \textbf{F1 nativo} & \textbf{F1 ajustado} & \textbf{Recall ajustado} & \textbf{Precisión ajustada} \\
+\textbf{Modelo} & \textbf{Umbral} & \textbf{F1} & \textbf{Recall} & \textbf{Precisión} & \textbf{Ex. balanceada} \\
 \midrule
-Random Forest & 0,3078 & 0,5904 & 0,6691 & 0,7173 & 0,6270 \\
-MLP & 0,2230 & 0,6504 & 0,6735 & 0,7775 & 0,5940 \\
-SVM & $-0{,}8475$ & 0,6494 & 0,6713 & 0,7592 & 0,6017 \\
-k-NN & 0,3498 & 0,6079 & 0,6465 & 0,6728 & 0,6223 \\
-Regresión logística & 0,3172 & 0,6213 & 0,6600 & 0,6885 & 0,6337 \\
+Random Forest & 0,3078 & \makecell{0,6691\\{[0,6344;0,7041]}} & \makecell{0,7173\\{[0,6728;0,7618]}} & \makecell{0,6270\\{[0,5903;0,6674]}} & \makecell{0,8191\\{[0,7957;0,8417]}} \\
+MLP & 0,2230 & \makecell{0,6735\\{[0,6440;0,7059]}} & \makecell{0,7775\\{[0,7382;0,8168]}} & \makecell{0,5940\\{[0,5636;0,6296]}} & \makecell{0,8394\\{[0,8186;0,8613]}} \\
+SVM & $-0{,}8475$ & \makecell{0,6713\\{[0,6380;0,7036]}} & \makecell{0,7592\\{[0,7147;0,8037]}} & \makecell{0,6017\\{[0,5676;0,6397]}} & \makecell{0,8330\\{[0,8102;0,8555]}} \\
+k-NN & 0,3498 & \makecell{0,6465\\{[0,6127;0,6809]}} & \makecell{0,6728\\{[0,6257;0,7173]}} & \makecell{0,6223\\{[0,5857;0,6625]}} & \makecell{0,7985\\{[0,7749;0,8219]}} \\
+Regresión logística & 0,3172 & \makecell{0,6600\\{[0,6247;0,6948]}} & \makecell{0,6885\\{[0,6414;0,7330]}} & \makecell{0,6337\\{[0,5951;0,6732]}} & \makecell{0,8073\\{[0,7838;0,8315]}} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -622,21 +622,21 @@ La ablación de \textit{SpecialDay} muestra el efecto contrario: retirarla no ca
 AP de forma apreciable. Los cambios son $-0{,}0003$ en Random Forest, $-0{,}0030$ en
 la MLP, $+0{,}0016$ en SVM, $-0{,}0059$ en k-NN y $-0{,}0004$ en la regresión
 logística; los valores cercanos a cero y algunos negativos indican que el AP sin la
-variable es ligeramente mayor. Esto es consistente con la equivalencia algebraica entre
-el tratamiento numérico y el ordinal: como los seis niveles son equiespaciados, la
-estandarización produce la misma matriz de diseño y la variable no aporta información
-adicional a la que ya contienen el mes, las tasas y el resto de atributos.
+variable es ligeramente mayor. La equivalencia algebraica entre las codificaciones
+numérica y ordinal estandarizadas no explica por sí sola la ablación; no se compararon
+otras codificaciones, como one-hot.
 
 \section{Análisis individual y reducción de dimensión}
 \label{sec:reduccion}
 
 Esta sección cubre el 20\,\% restante del Entregable II. Primero se evalúa cada atributo
-por separado para identificar señal, redundancia y variables prescindibles. Después se
+por separado para describir señal, redundancia y candidatas a revisión. Después se
 aplican PCA y UMAP sobre la matriz preprocesada y se comparan Random Forest y la MLP con
 la línea base de la Sección~\ref{sec:resultados}. Todo el análisis se ajusta con el
 60\,\% de entrenamiento y se evalúa en validación y prueba; la reducción se encapsula en
 el \texttt{Pipeline}, de modo que PCA y UMAP se aprenden solo con entrenamiento. Tras el
-one-hot y la estandarización, la matriz de diseño tiene 73 columnas.
+one-hot y la estandarización de las numéricas, la matriz tiene 73 columnas; las binarias
+permanecen en $\{0,1\}$. Estandarizar también todas las columnas queda fuera de alcance.
 
 \subsection{Análisis individual de variables}
 
@@ -648,13 +648,14 @@ información mutua con la etiqueta. La Tabla~\ref{tab:variables-individuales} or
 17 variables por AUC. El AUC de las categóricas es optimista porque la regresión se
 ajusta y se evalúa con los mismos datos de entrenamiento; por eso la lectura se apoya
 también en la V de Cramér y en la información mutua, que son medidas descriptivas.
+La Fig.~\ref{fig:variables-top10} muestra los diez mayores AUC y su información mutua.
 
 \begin{table*}[t]
 \centering
 \caption{Análisis individual de las 17 variables en entrenamiento. AUC es el área bajo
 la curva ROC univariada; las variables numéricas reportan $r$ (correlación
 punto-biserial) y las categóricas $V$ (V de Cramér); IM es la información mutua.
-``Eliminar'' significa eliminar o combinar.}
+Las candidaturas son descriptivas; no se eliminó ninguna variable del experimento principal.}
 \label{tab:variables-individuales}
 \scriptsize
 \renewcommand{\arraystretch}{1.02}
@@ -663,7 +664,7 @@ punto-biserial) y las categóricas $V$ (V de Cramér); IM es la información mut
 \centering
 \begin{tabular}{@{}r p{2.45cm} r r r l@{}}
 \toprule
-\textbf{\#} & \textbf{Variable} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Decisión} \\
+\textbf{\#} & \textbf{Variable} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Candidata} \\
 \midrule
 1 & \texttt{PageValues} & 0,866 & 0,489 & 0,165 & Mantener \\
 2 & \texttt{ExitRates} & 0,710 & $-0,210$ & 0,043 & Mantener \\
@@ -681,16 +682,16 @@ punto-biserial) y las categóricas $V$ (V de Cramér); IM es la información mut
 \centering
 \begin{tabular}{@{}r p{2.45cm} r r r l@{}}
 \toprule
-\textbf{\#} & \textbf{Variable} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Decisión} \\
+\textbf{\#} & \textbf{Variable} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Candidata} \\
 \midrule
 10 & \texttt{Informational} & 0,558 & 0,090 & 0,007 & Revisar \\
 11 & \texttt{Informational\_}\allowbreak\texttt{Duration} & 0,556 & 0,066 & 0,005 & Revisar \\
 12 & \texttt{OperatingSystems} & 0,555 & 0,082 & 0,004 & Revisar \\
-13 & \texttt{VisitorType} & 0,546 & 0,095 & 0,004 & Eliminar \\
-14 & \texttt{SpecialDay} & 0,539 & $-0,091$ & 0,009 & Eliminar \\
-15 & \texttt{Browser} & 0,527 & 0,065 & 0,002 & Eliminar \\
-16 & \texttt{Region} & 0,527 & 0,035 & 0,001 & Eliminar \\
-17 & \texttt{Weekend} & 0,513 & 0,022 & 0,000 & Eliminar \\
+13 & \texttt{VisitorType} & 0,546 & 0,095 & 0,004 & \makecell[l]{Candidata\\a eliminar} \\
+14 & \texttt{SpecialDay} & 0,539 & $-0,091$ & 0,009 & \makecell[l]{Candidata\\a eliminar} \\
+15 & \texttt{Browser} & 0,527 & 0,065 & 0,002 & \makecell[l]{Candidata\\a eliminar} \\
+16 & \texttt{Region} & 0,527 & 0,035 & 0,001 & \makecell[l]{Candidata\\a eliminar} \\
+17 & \texttt{Weekend} & 0,513 & 0,022 & 0,000 & \makecell[l]{Candidata\\a eliminar} \\
 \bottomrule
 \end{tabular}
 \end{minipage}
@@ -700,15 +701,15 @@ punto-biserial) y las categóricas $V$ (V de Cramér); IM es la información mut
 ablación de la Sección~\ref{sec:sensibilidad}. Le siguen \textit{ExitRates} (0,710), con
 dirección negativa, y las variables de producto (0,669 y 0,658). \textit{TrafficType} y
 \textit{Month} conservan señal pese a ser categóricas (0,634 y 0,625). Nueve variables
-superan 0,60 y se mantienen; tres quedan entre 0,55 y 0,60 y se marcan para revisión;
-cinco no superan 0,55 y son candidatas a eliminar o combinar. \textit{Weekend} es casi
+superan 0,60; tres quedan entre 0,55 y 0,60 y cinco no superan 0,55. Estos cortes son
+descriptivos, no un criterio de selección; las últimas son candidatas a revisión o
+eliminación. \textit{Weekend} es casi
 indistinguible de una asignación aleatoria (0,513).
 
 El análisis de redundancia encontró dos pares con $|r|>0{,}8$:
 \textit{ProductRelated} y \textit{ProductRelated\_Duration} (0,843), y
-\textit{BounceRates} y \textit{ExitRates} (0,899). Son pares casi duplicados: en un
-modelo lineal conviene conservar uno de cada par, mientras que en Random Forest la
-redundancia no penaliza el AP y reparte la importancia entre ambos. La decisión de
+\textit{BounceRates} y \textit{ExitRates} (0,899). Esta correlación sugiere redundancia,
+sin demostrar el efecto de eliminar una variable de cada par. La decisión de
 mantener todas las variables en el experimento principal es deliberada: seleccionar
 variables con la etiqueta antes de particionar introduciría fuga. El análisis individual
 es descriptivo y sirve para interpretar los modelos, no como paso de selección.
@@ -719,98 +720,119 @@ PCA se ajustó dentro del \texttt{Pipeline}, después del preprocesamiento y sol
 entrenamiento, con el número de componentes elegido para retener el 95\,\% de la
 varianza. Se obtuvieron 28 componentes (61,64\,\% menos columnas); el primero concentra
 31,09\,\% de la varianza, los dos primeros 43,47\,\% y los cinco primeros 65,64\,\%. La
-Fig.~\ref{fig:reduccion}(a) muestra la curva acumulada y el corte en 28.
+Fig.~\ref{fig:reduccion} muestra la curva acumulada y el corte en 28.
 
 \begin{figure*}[t]
 \centering
 \begin{minipage}[t]{0.49\textwidth}
 \centering
-\includegraphics[width=\linewidth]{figuras/fig11_pca_varianza.png}
-\centerline{(a)}
+\includegraphics[width=\linewidth]{figuras/fig14_variables_top10.png}
+\caption{Diez variables con mayor AUC univariado en entrenamiento; se anota la
+información mutua y el color indica la recomendación descriptiva.}
+\label{fig:variables-top10}
 \end{minipage}\hfill
-\begin{minipage}[t]{0.49\textwidth}
+\begin{minipage}[t]{0.40\textwidth}
 \centering
-\includegraphics[width=\linewidth]{figuras/fig13_comparacion_reduccion.png}
-\centerline{(b)}
-\end{minipage}
-\caption{Reducción de dimensión. (a) Varianza acumulada de PCA; el corte retiene 28
-componentes para el 95\,\%. (b) AP de prueba con la representación original, PCA, UMAP
-de 10 componentes y UMAP de 2.}
+\includegraphics[width=\linewidth]{figuras/fig11_pca_varianza.png}
+\caption{Varianza acumulada de PCA; el corte retiene 28 componentes para el 95\,\%.}
 \label{fig:reduccion}
+\end{minipage}
 \end{figure*}
 
 La Tabla~\ref{tab:reduccion} compara el AP de prueba. Con PCA, Random Forest pasa de
 0,7486 a 0,7352 ($\Delta=-0{,}0134$) y la MLP de 0,7377 a 0,7211 ($\Delta=-0{,}0165$);
 el ROC-AUC se mantiene por encima de 0,92 en ambos casos y el F1 de Random Forest sube
-de 0,5904 a 0,6254 porque la representación cambia la distribución de scores y el umbral
-nativo. La pérdida de AP es pequeña frente a la reducción de 61,6\,\% de las columnas:
-PCA conserva la estructura lineal que separa las compras. En validación, la MLP con PCA
+de 0,5904 a 0,6254 con el umbral nativo. La diferencia puntual de AP es pequeña frente
+a la reducción de 61,6\,\% de las columnas; los IC pareados incluyen cero.
+En validación, la MLP con PCA
 incluso mejora su AP (0,7189 frente a 0,7134), aunque la ventaja no se repite en prueba;
 esa discrepancia recuerda que la validación tiene 2\,441 sesiones y una sola partición.
 
 \subsection{Proyección UMAP}
 
 UMAP se ajustó con 10 componentes, 15 vecinos y \textit{min\_dist}=0,1, también dentro
-del \texttt{Pipeline}; se eligieron 10 como compromiso entre reducción y señal, y 2 solo
-para la visualización. La reducción es del 86,30\,\% (10 columnas frente a 73). El AP de
+del \texttt{Pipeline}; se evaluaron 10 componentes y, como experimento adicional, dos
+componentes con ambos clasificadores. UMAP2 también sirve para visualizar. La reducción
+es del 86,30\,\% (10 columnas frente a 73). El AP de
 prueba cae a 0,6650 en Random Forest ($\Delta=-0{,}0836$) y a 0,6236 en la MLP
 ($\Delta=-0{,}1141$); el ROC-AUC baja a 0,8923 y 0,8571. La caída es mucho mayor que la
 de PCA y crece al reducir a dos dimensiones: UMAP2 deja el AP en 0,6489 y 0,5762,
 respectivamente. La Fig.~\ref{fig:umap} muestra la proyección 2D en prueba: las clases
-se superponen y no forman dos grupos separados; la tasa de compra aumenta con la segunda
-coordenada, lo que explica que UMAP2 conserve algo de señal pero pierda AP. UMAP
-preserva vecindades locales, pero no la dirección lineal que separa las compras; además
-es estocástico y más costoso (48,1 s para Random Forest frente a 7,0 s con PCA).
+se superponen y no forman dos grupos separados. Estas comparaciones son descriptivas
+para las configuraciones, la partición y la semilla evaluadas; los IC pareados de AP y
+ROC-AUC quedan por debajo de cero, sin identificar la causa de las diferencias.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{figuras/fig12_umap_2d.png}
+\includegraphics[width=0.82\columnwidth]{figuras/fig12_umap_2d.png}
 \caption{Proyección UMAP en dos dimensiones del conjunto de prueba. Cada punto es una
 sesión; el color indica si terminó en compra.}
 \label{fig:umap}
 \end{figure}
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{Efecto de la reducción sobre el AP de prueba. $\Delta$ se mide frente a la
-línea base con las 73 columnas.}
+\caption{Reducción y métricas de prueba con IC del 95\,\%. $\Delta$ es reducción menos
+base y su IC es pareado; los demás IC son individuales.}
 \label{tab:reduccion}
 \scriptsize
-\renewcommand{\arraystretch}{1.05}
 \setlength{\tabcolsep}{2pt}
-\begin{tabular}{@{}l r r r r r r@{}}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Repr.} & \textbf{Comp.} & \textbf{Red.} & \textbf{AP RF} & \textbf{$\Delta$ RF} & \textbf{AP MLP} & \textbf{$\Delta$ MLP} \\
+\textbf{Representación} & \textbf{Red.} & \textbf{AP [IC]} & \textbf{$\Delta$AP [IC]} & \textbf{ROC-AUC [IC]} & \textbf{$\Delta$ROC-AUC [IC]} \\
 \midrule
-Base & 73 & 0\,\% & 0,7486 & --- & 0,7377 & --- \\
-PCA & 28 & 61,6\,\% & 0,7352 & $-0{,}0134$ & 0,7211 & $-0{,}0165$ \\
-UMAP10 & 10 & 86,3\,\% & 0,6650 & $-0{,}0836$ & 0,6236 & $-0{,}1141$ \\
-UMAP2 & 2 & 97,3\,\% & 0,6489 & $-0{,}0996$ & 0,5762 & $-0{,}1615$ \\
+Base RF & 0\,\% & 0,7486 [0,7115;0,7848] & --- & 0,9242 [0,9098;0,9377] & --- \\
+Base MLP & 0\,\% & 0,7377 [0,6997;0,7773] & --- & 0,9270 [0,9143;0,9399] & --- \\
+PCA RF & 61,6\,\% & 0,7352 [0,6955;0,7731] & \makecell{$-0{,}0134$\\$[-0{,}0304;0{,}0025]$} & 0,9226 [0,9092;0,9366] & \makecell{$-0{,}0015$\\$[-0{,}0078;0{,}0049]$} \\
+PCA MLP & 61,6\,\% & 0,7211 [0,6828;0,7630] & \makecell{$-0{,}0165$\\$[-0{,}0351;0{,}0026]$} & 0,9220 [0,9083;0,9358] & \makecell{$-0{,}0050$\\$[-0{,}0113;0{,}0017]$} \\
+UMAP10 RF & 86,3\,\% & 0,6650 [0,6226;0,7081] & \makecell{$-0{,}0836$\\$[-0{,}1111;-0{,}0545]$} & 0,8923 [0,8745;0,9099] & \makecell{$-0{,}0319$\\$[-0{,}0433;-0{,}0203]$} \\
+UMAP10 MLP & 86,3\,\% & 0,6236 [0,5791;0,6706] & \makecell{$-0{,}1141$\\$[-0{,}1478;-0{,}0801]$} & 0,8571 [0,8340;0,8795] & \makecell{$-0{,}0699$\\$[-0{,}0874;-0{,}0534]$} \\
+UMAP2 RF & 97,3\,\% & 0,6489 [0,6082;0,6919] & \makecell{$-0{,}0996$\\$[-0{,}1294;-0{,}0694]$} & 0,8876 [0,8687;0,9052] & \makecell{$-0{,}0366$\\$[-0{,}0512;-0{,}0236]$} \\
+UMAP2 MLP & 97,3\,\% & 0,5762 [0,5302;0,6322] & \makecell{$-0{,}1615$\\$[-0{,}1987;-0{,}1170]$} & 0,8504 [0,8268;0,8731] & \makecell{$-0{,}0766$\\$[-0{,}0964;-0{,}0578]$} \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-La comparación deja una conclusión práctica: PCA es la única reducción que conserva el
-desempeño; UMAP degrada el AP entre 8 y 16 puntos y no compensa el ahorro de columnas.
-Para este conjunto, con 73 columnas y 7\,323 sesiones de entrenamiento, el costo de
-mantener las variables originales es menor que la pérdida de señal. La reducción tendría
-sentido si el objetivo fuera desplegar el modelo con menos memoria o visualizar los
-perfiles, no si el objetivo es maximizar el AP. El análisis individual y la reducción
-completan así el diagnóstico de la Sección~\ref{sec:resultados}: la señal se conserva en
-28 direcciones y se pierde cuando UMAP prioriza vecindades locales.
+\begin{table*}[t]
+\centering
+\caption{Métricas de decisión en prueba para cada representación, con IC individuales del 95\,\%.}
+\label{tab:reduccion-decision}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Representación} & \textbf{F1 [IC]} & \textbf{Precisión [IC]} & \textbf{Recall [IC]} & \textbf{Ex. balanceada [IC]} \\
+\midrule
+Base RF & \makecell{0,5904\\{[0,5439;0,6328]}} & \makecell{0,8054\\{[0,7578;0,8557]}} & \makecell{0,4660\\{[0,4162;0,5157]}} & \makecell{0,7225\\{[0,6984;0,7469]}} \\
+Base MLP & \makecell{0,6504\\{[0,6100;0,6896]}} & \makecell{0,7220\\{[0,6790;0,7677]}} & \makecell{0,5916\\{[0,5445;0,6414]}} & \makecell{0,7747\\{[0,7503;0,7998]}} \\
+PCA RF & \makecell{0,6254\\{[0,5823;0,6667]}} & \makecell{0,7393\\{[0,6931;0,7865]}} & \makecell{0,5419\\{[0,4921;0,5916]}} & \makecell{0,7532\\{[0,7285;0,7779]}} \\
+PCA MLP & \makecell{0,6400\\{[0,5994;0,6798]}} & \makecell{0,7044\\{[0,6605;0,7524]}} & \makecell{0,5864\\{[0,5340;0,6336]}} & \makecell{0,7704\\{[0,7447;0,7948]}} \\
+UMAP10 RF & \makecell{0,5896\\{[0,5467;0,6304]}} & \makecell{0,6581\\{[0,6128;0,7067]}} & \makecell{0,5340\\{[0,4843;0,5812]}} & \makecell{0,7413\\{[0,7164;0,7655]}} \\
+UMAP10 MLP & \makecell{0,6003\\{[0,5587;0,6420]}} & \makecell{0,6364\\{[0,5929;0,6826]}} & \makecell{0,5681\\{[0,5183;0,6204]}} & \makecell{0,7539\\{[0,7281;0,7802]}} \\
+UMAP2 RF & \makecell{0,5839\\{[0,5404;0,6257]}} & \makecell{0,6330\\{[0,5898;0,6809]}} & \makecell{0,5419\\{[0,4921;0,5890]}} & \makecell{0,7418\\{[0,7156;0,7670]}} \\
+UMAP2 MLP & \makecell{0,5634\\{[0,5194;0,6054]}} & \makecell{0,6453\\{[0,6007;0,6943]}} & \makecell{0,5000\\{[0,4503;0,5497]}} & \makecell{0,7245\\{[0,7000;0,7497]}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+La Tabla~\ref{tab:reduccion-decision} complementa la comparación con métricas de decisión.
+PCA presenta diferencias puntuales de AP menores que UMAP para estas configuraciones;
+sus IC pareados incluyen cero, a diferencia de los de UMAP. El ahorro de columnas
+debe ponderarse frente a esas diferencias, sin extrapolar a otras semillas o particiones.
 
 \section{Discusión y conclusiones}
 \label{sec:conclusiones}
 
 El diseño experimental permitió comparar cinco familias de modelos bajo un protocolo
 común, con el preprocesamiento y la selección de transformaciones ajustados
-exclusivamente dentro de los folds y con un conjunto de prueba aislado. Random Forest
+exclusivamente dentro de los folds. La prueba histórica ya fue consultada. Random Forest
 obtuvo el mayor AP en validación y prueba, con 0,7247 y 0,7486, respectivamente. La MLP
 quedó segunda en AP (0,7134 y 0,7377) y primera en ROC-AUC de prueba (0,9270 frente a
 0,9242). Las comparaciones pareadas muestran que la diferencia en AP
-($+0{,}0104$, IC $[-0{,}0100;0{,}0321]$) y la diferencia en ROC-AUC
+($+0{,}0109$, IC $[-0{,}0100;0{,}0321]$) y la diferencia en ROC-AUC
 ($-0{,}0029$, IC $[-0{,}0101;0{,}0040]$) no son significativas. Por lo tanto, Random
-Forest y la MLP son estadísticamente equivalentes; la elección entre ambos debe
+Forest y la MLP no muestran una diferencia significativa; esto no demuestra equivalencia,
+sino ausencia de evidencia de diferencia con la potencia disponible. La elección debe
 hacerse por criterios operativos: interpretabilidad, costo de cómputo, calibración y
 perfil de errores.
 
@@ -829,24 +851,26 @@ priorizar acciones posteriores, no para decidir durante la sesión. Un sistema e
 real tendría que operar sin \textit{PageValues} y asumir la pérdida de AP documentada en
 la Tabla~\ref{tab:pagevalues}.
 
-La reducción de dimensión confirma que la señal está concentrada. PCA retuvo 28
-componentes (95,34\,\% de la varianza y 61,64\,\% menos columnas) y conservó el AP
-dentro de 1,7 puntos; UMAP, en cambio, lo degradó entre 8 y 16 puntos. Para este tamaño
-de datos, reducir con PCA es razonable; UMAP sirve para visualizar, no para modelar.
+PCA retuvo 28 componentes (95,34\,\% de la varianza y 61,64\,\% menos columnas) y
+presentó diferencias puntuales de AP de hasta 1,7 puntos; las de UMAP fueron de 8 a 16
+puntos. UMAP2 se evaluó con ambos clasificadores además de usarse para visualización.
 
 El trabajo tiene limitaciones. Usa una sola base de datos y una sola semilla, con
-particiones estratificadas pero no temporales, de modo que no evalúa la deriva entre
-periodos. No calibró probabilidades ni hizo un análisis formal de costo-beneficio; el
+particiones estratificadas pero no temporales; faltan enero y abril y no se cuantificó el
+sesgo estacional ni la deriva entre periodos. La prueba consultada no es independiente.
+No se estandarizaron todas las columnas antes de PCA/UMAP ni se compararon otras
+codificaciones de \textit{SpecialDay}. No se calibraron probabilidades ni se hizo un análisis formal de costo-beneficio; el
 umbral se eligió por F1. La clase positiva tiene 1\,908 casos, lo que limita la
 precisión de los intervalos, y UMAP añade variabilidad por su inicialización aleatoria.
 Como trabajo futuro se propone validación temporal, calibración, umbrales sensibles al
 costo y repetir el experimento con otras semillas.
 
-En síntesis, el protocolo evita fugas, reporta incertidumbre y distingue ranking de
-decisión. Random Forest y la MLP son los finalistas, sin diferencia estadística;
+En síntesis, el protocolo ajusta el preprocesamiento en entrenamiento, reporta
+incertidumbre y distingue ranking de decisión. Random Forest y la MLP son los finalistas,
+sin diferencia significativa detectada;
 \textit{PageValues} explica la mayor parte del desempeño y el umbral ajustado mejora el
-recall a cambio de precisión. PCA conserva la señal en 28 direcciones; UMAP no la
-preserva.
+recall a cambio de precisión. PCA y UMAP muestran diferencias puntuales de AP que deben
+interpretarse junto con los IC pareados pendientes.
 
 \begin{thebibliography}{5}
 
