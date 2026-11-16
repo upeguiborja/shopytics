@@ -1,0 +1,45 @@
+{
+  "rapido": false,
+  "n_entrenamiento": 7323,
+  "n_folds": 5,
+  "seleccion_familias": "dos mayores AP de validacion del CSV; empate por nombre",
+  "pca": "minimo numero de componentes que conserva al menos 95% de varianza en cada ajuste",
+  "umap": "2, 5 y 10 dimensiones; dos mejores por AP-CV, seleccion por AP de validacion; empate menor dimension",
+  "prueba": "solo reporte de PCA y UMAP seleccionados por familia, sin decisiones",
+  "configuraciones": [
+    {
+      "modelo": "RandomForest",
+      "params": "{'clf__class_weight': None, 'clf__max_depth': 8, 'clf__max_features': 0.7, 'clf__min_samples_leaf': 20, 'pre__num__log__usar_log': True}"
+    },
+    {
+      "modelo": "MLP",
+      "params": "{'clf__alpha': 0.1, 'clf__hidden_layer_sizes': (64,), 'clf__learning_rate_init': 0.03, 'pre__num__log__usar_log': True}"
+    }
+  ],
+  "seleccion": [
+    {
+      "modelo": "RandomForest",
+      "metodo": "PCA",
+      "componentes": 28,
+      "AP_validacion": 0.7164825023437467
+    },
+    {
+      "modelo": "RandomForest",
+      "metodo": "UMAP",
+      "componentes": 10,
+      "AP_validacion": 0.6833875463561996
+    },
+    {
+      "modelo": "MLP",
+      "metodo": "PCA",
+      "componentes": 28,
+      "AP_validacion": 0.7332793345831674
+    },
+    {
+      "modelo": "MLP",
+      "metodo": "UMAP",
+      "componentes": 10,
+      "AP_validacion": 0.635099355707068
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+modelo,AP_con,ROC_AUC_con,AP_sin,ROC_AUC_sin,params,delta_AP
+RandomForest,0.7414039953316898,0.926500267563642,0.3848242118023754,0.784683892668756,"{'clf__class_weight': 'balanced', 'clf__max_depth': None, 'clf__max_features': 'sqrt', 'clf__min_samples_leaf': 5, 'pre__num__log__usar_log': True}",0.35657978352931435
+MLP,0.7224787231125073,0.9242297989450348,0.3532284691451312,0.7652676910531815,"{'clf__alpha': 0.1, 'clf__hidden_layer_sizes': (64,), 'clf__learning_rate_init': 0.01, 'pre__num__log__usar_log': False}",0.3692502539673761
+SVM,0.7054172967034158,0.9000713503045128,0.3402588611746726,0.76853833804755,"{'clf__C': 1, 'clf__class_weight': 'balanced', 'clf__gamma': 0.01, 'clf__kernel': 'rbf', 'pre__num__log__usar_log': True}",0.3651584355287432
+kNN,0.7018307073794038,0.912417501210407,0.347741529782497,0.7615179777285122,"{'clf__n_neighbors': 101, 'clf__p': 1, 'clf__weights': 'distance', 'pre__num__log__usar_log': True}",0.3540891775969068
+Regresion_logistica,0.6840864664961273,0.91231557220396,0.3344895071533118,0.7615829574701221,"{'clf__C': 0.1, 'clf__class_weight': None, 'pre__num__log__usar_log': True}",0.3495969593428154
