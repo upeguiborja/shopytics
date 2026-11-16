@@ -15,12 +15,14 @@ El repositorio contiene el Entregable II completo:
 
 - **Sección 1 (30 %):** diseño experimental y resultados del entrenamiento y la evaluación
   de cinco familias de modelos (regresión logística, k-NN, Random Forest, MLP y SVM), con
-  intervalos de confianza bootstrap, comparaciones pareadas, análisis de umbral y
-  sensibilidad a `PageValues` y `SpecialDay`.
+  intervalos de confianza, comparaciones pareadas, análisis de umbral y sensibilidad a
+  `PageValues` y `SpecialDay`.
 - **Sección 2 (20 %):** análisis individual de las 17 variables, redundancia, PCA y UMAP,
   y comparación del AP con y sin reducción de dimensión.
 
-El informe está en LaTeX (formato IEEE) y se compila con `pdflatex`.
+El flujo es único: `src/ejecutar_todo.py` ejecuta las etapas en orden, escribe los
+artefactos en `resultados/` y alimenta al notebook y al informe LaTeX. El informe se
+compila con `pdflatex`.
 
 ## Estructura del repositorio
 
@@ -28,36 +30,42 @@ El informe está en LaTeX (formato IEEE) y se compila con `pdflatex`.
 .
 ├── data/
 │   └── online_shoppers_intention.csv        # datos de entrada
+├── src/
+│   ├── ejecutar_todo.py                     # orquestador del flujo único
+│   ├── proyecto_ml.py                       # carga, auditoría, particiones y pipelines
+│   ├── busqueda.py                          # validación cruzada y top-3 por familia
+│   ├── seleccion.py                         # configuración final elegida en validación
+│   ├── evaluacion.py                        # métricas, intervalos, umbrales y comparaciones
+│   ├── sensibilidad.py                      # repetición del experimento sin PageValues
+│   ├── specialday.py                        # ablación y codificación de SpecialDay
+│   ├── analisis_variables.py                # análisis individual, redundancia y eliminación
+│   ├── experimentos_reduccion.py            # PCA, UMAP y comparación con la línea base
+│   └── figuras.py                           # figuras del informe y del notebook
+├── notebooks/
+│   └── proyecto_intencion_compra.ipynb      # notebook único de resultados
+├── tests/
+│   └── test_*.py                            # pruebas unitarias y de integridad
+├── resultados/                              # salida vigente del flujo único
+│   ├── evaluacion_familias/
+│   ├── variables/
+│   ├── reduccion/
+│   └── figuras/
 ├── informe_entregable_II_latex/
 │   ├── main.tex                             # fuente del informe IEEE
-│   ├── main.pdf                             # PDF previo; puede no coincidir con la fuente
 │   ├── IEEEtran.cls
-│   └── figuras/                             # fig01–fig13
-├── notebooks/
-│   ├── 01_analisis_exploratorio.ipynb       # EDA y análisis individual
-│   ├── 02_entrenamiento_evaluacion.ipynb    # sección 1 (30 %)
-│   └── 03_reduccion_dimension.ipynb         # PCA/UMAP (20 %)
-├── src/
-│   ├── proyecto_ml.py                       # pipelines, métricas, IC, UMAP
-│   ├── auditar.py                           # auditoría y particiones
-│   ├── entrenar.py                          # búsqueda y evaluación
-│   ├── configuracion_final.py                # configuraciones históricas finales
-│   ├── evaluar_final.py                     # reproducción de configuraciones finales
-│   ├── figuras.py                           # figuras del flujo original
-│   ├── figuras_corregidas.py                # figuras del informe corregido
-│   ├── analisis_variables.py                # análisis individual y redundancia
-│   ├── reduccion.py                         # PCA, UMAP y comparación
-│   ├── figuras_reduccion.py                 # figuras de reducción
-│   └── informe.py                           # generador DOCX legado
-├── resultados/                              # archivo histórico de la exploración
-├── resultados_corregidos/                   # resultados usados en el informe
+│   └── figuras/
 ├── requirements.txt
-└── requirements-informe-windows.txt         # flujo DOCX opcional (Windows)
+└── README.md
 ```
 
-## Cómo reproducir
+El flujo vigente lee y escribe únicamente en `resultados/`; si se ejecuta con `--rapido`,
+usa `resultados_rapido/`. Los notebooks y artefactos de exploraciones anteriores no forman
+parte de este flujo.
 
-### Entorno
+## Instalación
+
+Las versiones exactas de las dependencias están en `requirements.txt`. La reproducibilidad
+documentada se verificó con Python 3.13.5.
 
 ```bash
 python -m venv .venv
@@ -78,93 +86,167 @@ source .venv/bin/activate
 Instalación de dependencias:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Las ejecuciones históricas del informe usaron Python 3.13.5, scikit-learn 1.7.2 y
-semilla `SEMILLA = 42`. Los requisitos no fijan todas las versiones; otras versiones
-pueden producir diferencias.
+Para compilar el informe se necesita una distribución de TeX con `pdflatex` (TeX Live,
+MiKTeX o MacTeX). No se instala con `pip`.
 
-El flujo DOCX legado requiere además, solo en Windows:
+## Flujo único
+
+La ejecución completa se lanza desde la raíz del proyecto:
 
 ```bash
-pip install -r requirements-informe-windows.txt
+python src/ejecutar_todo.py
 ```
 
-### Notebooks
+Las etapas se ejecutan en este orden y cada una consume las salidas de las anteriores:
 
-Ejecute en orden desde `notebooks/`:
+| Etapa | Contenido | Salidas principales |
+|---|---|---|
+| `datos` | Auditoría, tabla de variables, particiones y cobertura mensual | `auditoria.json`, `tabla_variables.csv`, `resumen_particiones.csv` |
+| `busqueda` | Validación cruzada de las cinco familias y top-3 por AP-CV | `cv_todos_los_candidatos.csv`, `validacion_top3.csv`, `mejores_configuraciones.csv`, `ganador.json` |
+| `evaluacion` | Métricas por partición, intervalos CV y bootstrap, umbrales y comparaciones pareadas | `evaluacion_familias/metricas.csv`, `intervalos.csv`, `cv_intervalos.csv`, `umbrales.csv`, `comparaciones_test.csv` |
+| `sensibilidad` | Repetición de la búsqueda sin `PageValues` | `mejores_sin_pagevalues.csv`, `comparacion_pagevalues.csv` |
+| `specialday` | Ablación, comparación numérica/one-hot y AP mensual | `specialday_ablacion.csv`, `specialday_codificacion.csv`, `specialday_por_mes.csv` |
+| `variables` | AUC univariado, información mutua, redundancia y eliminación | `variables/analisis_variables.csv`, `redundancia_numericas.csv`, `eliminacion_validacion.csv` |
+| `reduccion` | PCA y UMAP para las dos mejores familias, con selección en validación | `reduccion/reduccion_test.csv`, `reduccion_validacion.csv`, `reduccion_cv.csv`, `reduccion_protocolo.json` |
+| `figuras` | Figuras del informe y del notebook | `informe_entregable_II_latex/figuras/`, `resultados/figuras/` |
 
-1. `01_analisis_exploratorio.ipynb`: auditoría, distribución de clases, cobertura
-   mensual, correlaciones y análisis individual de variables.
-2. `02_entrenamiento_evaluacion.ipynb`: sección 1. Con `RECALCULAR = False` carga los
-   resultados guardados; con `True` reentrena los cinco modelos (≈12 minutos).
-3. `03_reduccion_dimension.ipynb`: PCA, UMAP y comparación con la línea base.
+Al finalizar se escribe `resultados/manifiesto.json` con el SHA-256 de los datos, la semilla,
+las versiones de las librerías, los tamaños de las particiones y la duración de cada etapa.
 
-### Línea de comandos
+### Reanudar desde una etapa
+
+`--desde` ejecuta desde la etapa indicada hasta `figuras` y reutiliza los artefactos de las
+etapas anteriores. Los valores admitidos son `datos`, `busqueda`, `evaluacion`,
+`sensibilidad`, `specialday`, `variables`, `reduccion` y `figuras`.
 
 ```bash
-python src/auditar.py              # auditoría y particiones
-python src/evaluar_final.py        # configura y evalúa los modelos finales
-python src/figuras_corregidas.py   # figuras del informe corregido
-python src/analisis_variables.py   # análisis individual y redundancia
-python src/reduccion.py            # PCA, UMAP y comparación
-python src/figuras_reduccion.py    # figuras de reducción
+python src/ejecutar_todo.py --desde evaluacion
+python src/ejecutar_todo.py --desde reduccion
+python src/ejecutar_todo.py --desde figuras
 ```
 
-`resultados/` y `resultados_corregidos/mallas_ext/` conservan los artefactos históricos
-versionados. No ejecute `entrenar.py` para consultar el informe: regenera la búsqueda y
-las ablaciones en `resultados/` y puede sobrescribir ese archivo. Solo es necesario si
-se desea repetir la búsqueda, preferiblemente en una copia aislada.
+Antes de usar `--desde`, compruebe que los archivos de las etapas previas existan en la
+carpeta de salida correspondiente. La etapa `reduccion` depende de `mejores_configuraciones.csv`
+y de los resultados de `evaluacion`; `figuras` depende de todas las anteriores.
 
-`evaluar_final.py` reajusta las configuraciones finales y escribe
-`resultados_corregidos/`, reutilizando las ablaciones archivadas. Ejecútelo antes de
-generar las figuras; `entrenar.py` es opcional y solo sirve para repetir la búsqueda.
-Los scripts de figuras escriben en `informe_entregable_II_latex/figuras/`.
+### Prueba de humo
 
-### Informe LaTeX
+```bash
+python src/ejecutar_todo.py --rapido
+```
 
-Desde `informe_entregable_II_latex/`:
+`--rapido` reduce folds, tamaño de muestra y réplicas bootstrap, y escribe en
+`resultados_rapido/`. Sirve para comprobar que el flujo se ejecuta, no para producir cifras
+del informe: sus métricas **no son comparables** con la corrida completa y no deben citarse
+como resultados.
+
+### Advertencia de costo
+
+La corrida completa es costosa. La etapa `sensibilidad` repite la búsqueda por validación
+cruzada de las cinco familias sin `PageValues`, y `reduccion` recorre la rejilla de PCA y
+UMAP (quince configuraciones de UMAP por familia en el protocolo completo, con validación
+cruzada y evaluación en validación). UMAP y la búsqueda de sensibilidad son las etapas que
+más tiempo consumen; no hay un atajo equivalente para obtener resultados válidos. Para
+ahorrar tiempo, ejecute por etapas con `--desde` y conserve `resultados/` entre ejecuciones.
+
+## Pruebas
+
+La suite usa `pytest` y no entrena la rejilla completa:
+
+```bash
+python -m pytest -q
+```
+
+Las pruebas de integridad comprueban dimensiones, particiones, ausencia de fuga, mallas,
+preprocesador y contratos de las etapas. Las que dependen de `resultados/manifiesto.json`
+se omiten mientras no exista una ejecución completa.
+
+## Notebook
+
+El notebook único es `notebooks/proyecto_intencion_compra.ipynb`. Por defecto
+`RECALCULAR = False`: lee las tablas y figuras de `resultados/` sin reentrenar. Si se
+establece `RECALCULAR = True`, llama a `ejecutar_todo.main()` y ejecuta el flujo completo.
+
+Para ejecutarlo y guardar una copia ejecutada:
+
+```bash
+jupyter nbconvert --to notebook --execute notebooks/proyecto_intencion_compra.ipynb --output-dir notebooks --output proyecto_intencion_compra_ejecutado.ipynb
+```
+
+El notebook debe abrirse desde `notebooks/` o desde la raíz del proyecto; rechaza otros
+directorios de trabajo. No transcribe cifras: todas las tablas se leen de los CSV y JSON de
+`resultados/`. Si falta un artefacto, la sección correspondiente lo advierte y continúa.
+
+## Informe LaTeX
+
+Genere primero las figuras con la etapa `figuras`. Después, desde
+`informe_entregable_II_latex/`:
 
 ```bash
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-En Windows con MiKTeX:
+La segunda compilación actualiza referencias y tablas. En Windows con MiKTeX puede usarse la
+ruta completa de `pdflatex.exe`. El PDF versionado puede no coincidir con la fuente; la
+compilación local es la que manda. Para Overleaf, suba un ZIP con `main.tex`, `IEEEtran.cls`
+y `figuras/`, no el PDF suelto.
 
-```powershell
-& "C:\Users\<usuario>\AppData\Local\Programs\MiKTeX\miktex\bin\x64\pdflatex.exe" `
-  -interaction=nonstopmode -halt-on-error main.tex
-```
-
-Para Overleaf, suba un ZIP con `main.tex`, `IEEEtran.cls` y `figuras/`, no el PDF
-suelto. El enlace de edición no se publica en este repositorio.
+El notebook y el informe consumen los mismos artefactos de `resultados/`. Si se regenera una
+etapa, vuelva a ejecutar `figuras` y recompile el informe para mantener las cifras y las
+figuras alineadas.
 
 ## Resultados principales
 
-| Métrica | Valor |
-|---|---|
-| AP de prueba, Random Forest | 0,7486 |
-| AP de prueba, MLP | 0,7377 |
-| ROC-AUC de prueba, MLP | 0,9270 |
-| ROC-AUC de prueba, Random Forest | 0,9242 |
-| Media bootstrap pareada AP RF−MLP | +0,0104, IC 95 % [−0,0100; 0,0321] |
-| Umbral de RF por F1 | 0,3078; F1 0,6691; recall 0,7173; precisión 0,6270 |
-| Caída de AP sin `PageValues` | 0,34–0,39 |
-| PCA | 28 componentes; 61,64 % de reducción; AP 0,7352 (RF) y 0,7211 (MLP) |
-| UMAP 10 componentes | 86,30 % de reducción; AP 0,6650 (RF) y 0,6236 (MLP) |
-| UMAP 2 componentes | AP 0,6489 (RF) y 0,5762 (MLP) |
+Cifras redondeadas a cuatro decimales, leídas de los CSV actuales del flujo. Si se
+reejecuta el flujo, los CSV son la fuente de verdad y pueden cambiar estos valores.
 
-No se detectó una diferencia estadísticamente significativa entre Random Forest y la MLP
-en AP ni ROC-AUC; esto no demuestra equivalencia, solo ausencia de evidencia de diferencia
-con la potencia disponible. `PageValues` presenta el mayor AUC univariado (0,866). PCA
-muestra una caída puntual de AP de hasta 1,7 puntos con 61,64 % menos columnas; las
-caídas puntuales de UMAP son de 8 a 16 puntos. Los IC pareados de ΔAP y ΔROC-AUC
-incluyen cero para PCA y quedan por debajo de cero para UMAP en esta partición.
-Los IC bootstrap disponibles son condicionales a modelos y predicciones fijos y no
-incluyen la variabilidad del entrenamiento ni de la selección del umbral. La prueba
-histórica ya fue consultada y no constituye una evaluación independiente.
+| Modelo | AP validación | AP prueba | ROC-AUC prueba |
+|---|---:|---:|---:|
+| Random Forest | 0,7414 | 0,7496 | 0,9302 |
+| MLP | 0,7225 | 0,7494 | 0,9284 |
+| SVM | 0,7054 | 0,7272 | 0,9034 |
+| k-NN | 0,7018 | 0,6976 | 0,9075 |
+| Regresión logística | 0,6841 | 0,6956 | 0,9110 |
+
+Fuente: `resultados/evaluacion_familias/metricas.csv`.
+
+- La diferencia pareada Random Forest − MLP en AP de prueba es +0,0002, con IC 95 %
+  [−0,0190; 0,0190]; en ROC-AUC es +0,0018, con IC [−0,0036; 0,0075]. Ambos intervalos
+  incluyen cero: no se detecta una diferencia significativa, lo que no demuestra
+  equivalencia. Fuente: `evaluacion_familias/comparaciones_test.csv`.
+- Con el umbral de Random Forest elegido por F1 en validación (0,3195), el F1 de prueba es
+  0,6904, con recall 0,7356 y precisión 0,6505. Fuente: `umbrales.csv` y
+  `metricas_test_umbral.csv`.
+- Retirar `PageValues` reduce el AP de validación del ganador de 0,7414 a 0,3785
+  (Δ = 0,3629 en valor absoluto). La búsqueda completa sin la variable deja el AP entre
+  0,3345 y 0,3848 según la familia. Fuentes: `ablacion_sin_pagevalues.csv`,
+  `resumen.json` y `comparacion_pagevalues.csv`.
+- La ablación de `SpecialDay` es marginal: el AP de validación pasa de 0,7414 a 0,7418
+  (Δ = −0,0004). Fuente: `specialday_ablacion.csv`.
+- Reducción de dimensión en los CSV actuales: PCA con 28 componentes deja AP de prueba
+  0,7404 (Random Forest) y 0,7326 (MLP); UMAP con 10 componentes deja 0,6830 y 0,6224,
+  respectivamente. Fuente: `reduccion/reduccion_test.csv`. La corrida completa de
+  `reduccion` regenera estos archivos con la rejilla vigente del protocolo.
+
+### Limitaciones de la evaluación
+
+La partición de prueba fue consultada en el análisis histórico y no constituye una
+evaluación independiente. Las decisiones de búsqueda y selección se tomaron sin usar la
+prueba, pero sus métricas deben leerse como descriptivas. Los intervalos bootstrap son
+condicionales a los modelos y las predicciones fijos, y no incorporan la variabilidad del
+entrenamiento ni de la selección del umbral. La ausencia de diferencia significativa entre
+Random Forest y MLP no demuestra equivalencia; solo indica que no hay evidencia de
+diferencia con la potencia disponible. Las cifras de `--rapido` tampoco son comparables con
+las de la corrida completa.
+
+## Video de sustentación
+
+Pendiente de publicación. El enlace se agregará cuando esté disponible; este README no
+incluye una URL provisional.
 
 ## Datos y licencia
 
