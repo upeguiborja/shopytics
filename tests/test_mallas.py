@@ -1,4 +1,4 @@
-"""Especificaciones de las mallas de hiperparametros del plan."""
+"""Especificaciones de las mallas de hiperparametros."""
 
 import sys
 from pathlib import Path

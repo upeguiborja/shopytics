@@ -1,4 +1,4 @@
-"""Pruebas del analisis individual y del experimento de eliminacion (fase A.3)."""
+"""Pruebas del analisis individual y del experimento de eliminacion."""
 
 import json
 import runpy

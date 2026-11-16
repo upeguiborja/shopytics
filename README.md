@@ -246,9 +246,10 @@ Fuente: `resultados/evaluacion_familias/metricas.csv`.
 
 ### Limitaciones de la evaluación
 
-La partición de prueba fue consultada en el análisis histórico y no constituye una
+La partición de prueba no participó en ninguna decisión de esta versión, pero sus métricas
+se conocían de una primera versión del trabajo: se leen como descriptivas y no como una
 evaluación independiente. Las decisiones de búsqueda y selección se tomaron sin usar la
-prueba, pero sus métricas deben leerse como descriptivas. Los intervalos bootstrap son
+prueba. Los intervalos bootstrap son
 condicionales a los modelos y las predicciones fijos, y no incorporan la variabilidad del
 entrenamiento ni de la selección del umbral. La ausencia de diferencia significativa entre
 Random Forest y MLP no demuestra equivalencia; solo indica que no hay evidencia de
