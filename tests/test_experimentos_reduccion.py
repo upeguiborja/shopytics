@@ -60,52 +60,52 @@ def _fila(componentes, vecinos, ap, std, solicitada=None):
     }
 
 
-def test_simplicidad_umap_y_frontera_inclusiva():
+def test_simplicidad_umap_usa_error_estandar_y_frontera_inclusiva():
     ganador = _fila(10, 15, 0.70, 0.02)
-    simple = _fila(5, 50, 0.685, 0.03)
+    simple = _fila(5, 50, 0.692, 0.03)
     elegido, detalle = reduccion.seleccionar_por_validacion([ganador, simple], "UMAP")
     assert elegido is simple
     assert detalle["motivo_seleccion"] == "simplicidad"
-    assert detalle["diferencia_con_max"] == pytest.approx(0.015)
-    assert detalle["umbral_simplicidad"] == pytest.approx(0.68)
+    assert detalle["n_folds"] == 5
+    assert detalle["error_estandar_CV"] == pytest.approx(0.02 / np.sqrt(5))
+    assert detalle["umbral_simplicidad"] == pytest.approx(0.70 - 0.02 / np.sqrt(5))
+    assert detalle["diferencia_con_max"] == pytest.approx(0.008)
 
-    simple["AP"] = 0.68  # diferencia exactamente igual a std_CV
+    simple["AP"] = 0.70 - 0.02 / np.sqrt(5)  # frontera inclusiva
     elegido, detalle = reduccion.seleccionar_por_validacion([ganador, simple], "UMAP")
     assert elegido is simple
     assert detalle["motivo_seleccion"] == "simplicidad"
 
-    simple["AP"] = 0.679  # diferencia apenas mayor que std_CV
+    simple["AP"] = 0.70 - 0.02 / np.sqrt(5) - 1e-6  # apenas fuera del umbral
     elegido, detalle = reduccion.seleccionar_por_validacion([ganador, simple], "UMAP")
     assert elegido is ganador
     assert detalle["motivo_seleccion"] == "mayor_AP_validacion"
 
 
-def test_simplicidad_umap_prefiere_menos_dimensiones_y_mas_vecinos():
+def test_simplicidad_umap_desempata_por_ap_en_la_misma_dimension():
     ganador = _fila(10, 15, 0.70, 0.02)
-    cinco = _fila(5, 15, 0.69, 0.02)
-    cinco_suave = _fila(5, 50, 0.685, 0.02)
-    dos = _fila(2, 15, 0.681, 0.02)
+    cinco_15 = _fila(5, 15, 0.694, 0.02)
+    cinco_50 = _fila(5, 50, 0.692, 0.02)
+    dos = _fila(2, 15, 0.680, 0.02)
     elegido, _ = reduccion.seleccionar_por_validacion(
-        [ganador, cinco, cinco_suave, dos], "UMAP"
+        [ganador, cinco_15, cinco_50, dos], "UMAP"
     )
-    assert elegido is dos
-    elegido, _ = reduccion.seleccionar_por_validacion(
-        [ganador, cinco, cinco_suave], "UMAP"
-    )
-    assert elegido is cinco_suave
+    assert elegido is cinco_15
+    assert reduccion.clave_simplicidad(cinco_15, "UMAP") == (5,)
+    assert reduccion.clave_simplicidad(cinco_50, "UMAP") == (5,)
 
 
 def test_simplicidad_pca_usa_componentes_ajustados_y_fijo_antes_de_95():
     ganador = _fila(20, None, 0.70, 0.02, solicitada=20)
-    quince = _fila(15, None, 0.685, 0.02, solicitada=15)
-    pca95 = _fila(18, None, 0.69, 0.02, solicitada=0.95)
+    quince = _fila(15, None, 0.694, 0.02, solicitada=15)
+    pca95 = _fila(18, None, 0.692, 0.02, solicitada=0.95)
     elegido, _ = reduccion.seleccionar_por_validacion(
         [ganador, quince, pca95], "PCA"
     )
     assert elegido is quince
 
-    fijo = _fila(10, None, 0.685, 0.02, solicitada=10)
-    pca95_igual = _fila(10, None, 0.685, 0.02, solicitada=0.95)
+    fijo = _fila(10, None, 0.692, 0.02, solicitada=10)
+    pca95_igual = _fila(10, None, 0.692, 0.02, solicitada=0.95)
     elegido, _ = reduccion.seleccionar_por_validacion(
         [ganador, fijo, pca95_igual], "PCA"
     )

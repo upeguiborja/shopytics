@@ -11,10 +11,11 @@ Fase A.1:
 - UMAP: las quince combinaciones de 2, 5, 10, 15 y 20 dimensiones por 15, 30 y
   50 vecinos pasan por CV y por validacion; ninguna se descarta antes de la
   validacion.
-- La seleccion final es por validacion, con regla de simplicidad: se parte del
-  mayor AP de validacion y se sustituye por la variante mas simple cuando su AP
-  no baja mas que la desviacion entre folds del ganador (diferencia <= std_CV).
-  La frontera es inclusiva.
+- La seleccion final es por validacion, con la regla 1-SE: se parte del mayor AP
+  de validacion y se sustituye por la variante mas simple cuando su AP no baja
+  mas que el error estandar entre folds del ganador (std_CV / sqrt(n_folds)). La
+  frontera es inclusiva. La complejidad se mide solo por la dimension; entre las
+  candidatas elegibles de menor dimension gana la de mayor AP de validacion.
 - Test se consulta solo despues de fijar todas las variantes. Por familia se
   reportan el modelo base sin reduccion, el PCA seleccionado, el UMAP
   seleccionado y el UMAP 2D, con bootstrap IC individual por metrica en
@@ -107,23 +108,42 @@ def crear_pipeline(modelo, metodo, dimensiones=None, vecinos=None, semilla=SEMIL
 
 
 def clave_simplicidad(fila, metodo):
-    """Orden ascendente de complejidad; la primera clave es la mas simple."""
+    """Orden ascendente de complejidad; la primera clave es la mas simple.
+
+    La complejidad se mide solo por la dimension: en UMAP, el numero de
+    componentes; en PCA, el numero de componentes ajustado, con el valor fijo
+    antes que la variante 0.95. Los vecinos de UMAP no cuentan como complejidad.
+    """
     componentes = int(fila["componentes"])
     if metodo == "UMAP":
-        return (componentes, -int(fila["vecinos"]))
+        return (componentes,)
     solicitada = fila["dimensiones_solicitadas"]
     return (componentes, 0 if isinstance(solicitada, (int, np.integer)) else 1)
 
 
+def _n_folds(fila, por_defecto=5):
+    """Numero de folds a partir de AP_folds; si no se puede leer, usa el defecto."""
+    folds = fila.get("AP_folds")
+    if isinstance(folds, str):
+        try:
+            folds = json.loads(folds)
+        except (ValueError, TypeError):
+            return por_defecto
+    if isinstance(folds, (list, tuple)) and len(folds) > 1:
+        return len(folds)
+    return por_defecto
+
+
 def seleccionar_por_validacion(filas, metodo):
-    """Elige por AP de validacion con una regla de simplicidad acotada.
+    """Elige por AP de validacion con la regla 1-SE.
 
     Se parte del mayor AP de validacion. Una variante mas simple lo sustituye
-    si su AP no baja mas que la desviacion entre folds del ganador. La frontera
-    es inclusiva: diferencia <= std_CV activa la simplicidad. Un std_CV no
-    finito se trata como cero, de modo que solo los empates exactos activan la
-    regla. En UMAP la complejidad es (n_components, -n_neighbors); en PCA es el
-    numero de componentes ajustado, con el valor fijo antes que 0.95.
+    si su AP no baja mas que el error estandar entre folds del ganador, es
+    decir, std_CV / sqrt(n_folds). La frontera es inclusiva: diferencia <=
+    error estandar activa la simplicidad. Un std_CV no finito se trata como
+    cero, de modo que solo los empates exactos activan la regla. La complejidad
+    se mide solo por la dimension; entre las candidatas elegibles de menor
+    dimension gana la de mayor AP de validacion.
     """
     if not filas:
         raise ValueError("No hay candidatos para seleccionar")
@@ -133,13 +153,17 @@ def seleccionar_por_validacion(filas, metodo):
     desviacion = float(ganador.get("std_CV", 0.0))
     if not np.isfinite(desviacion) or desviacion < 0:
         desviacion = 0.0
-    umbral = float(ganador["AP"]) - desviacion
+    n_folds = _n_folds(ganador)
+    error_estandar = desviacion / np.sqrt(n_folds)
+    umbral = float(ganador["AP"]) - error_estandar
     elegibles = [
         f for f in filas
         if float(f["AP"]) >= umbral
         or np.isclose(float(f["AP"]), umbral, rtol=0.0, atol=1e-12)
     ]
-    elegido = min(elegibles, key=lambda f: clave_simplicidad(f, metodo))
+    elegido = min(
+        elegibles, key=lambda f: (clave_simplicidad(f, metodo), -float(f["AP"]))
+    )
     if clave_simplicidad(elegido, metodo) < clave_simplicidad(ganador, metodo):
         motivo = "simplicidad"
     else:
@@ -147,7 +171,9 @@ def seleccionar_por_validacion(filas, metodo):
     detalle = {
         "AP_max_validacion": float(ganador["AP"]),
         "desviacion_std_CV": desviacion,
-        "umbral_simplicidad": umbral,
+        "n_folds": int(n_folds),
+        "error_estandar_CV": float(error_estandar),
+        "umbral_simplicidad": float(umbral),
         "diferencia_con_max": float(ganador["AP"]) - float(elegido["AP"]),
         "motivo_seleccion": motivo,
     }
@@ -335,6 +361,8 @@ def ejecutar_experimentos(X_tr, y_tr, X_va, y_va, X_te, y_te, configuraciones,
                 "diferencia_con_max": detalle["diferencia_con_max"],
                 "umbral_simplicidad": detalle["umbral_simplicidad"],
                 "desviacion_std_CV": detalle["desviacion_std_CV"],
+                "error_estandar_CV": detalle["error_estandar_CV"],
+                "n_folds": detalle["n_folds"],
                 "AP_max_validacion": detalle["AP_max_validacion"],
                 "pipe": pipe_elegido,
             })
@@ -561,17 +589,22 @@ def ejecutar_experimentos(X_tr, y_tr, X_va, y_va, X_te, y_te, configuraciones,
                  "validacion para todas las configuraciones; seleccion final por "
                  "AP de validacion"),
         "regla_simplicidad": {
-            "criterio": ("se parte del mayor AP de validacion; una variante mas "
-                         "simple lo sustituye si su AP_validacion >= AP_max - "
-                         "std_CV del ganador"),
+            "criterio": ("regla 1-SE: se parte del mayor AP de validacion; una "
+                         "variante mas simple lo sustituye si su AP_validacion >= "
+                         "AP_max - std_CV/sqrt(n_folds) del ganador"),
             "desviacion": ("std_CV poblacional entre folds del candidato con mayor "
                            "AP de validacion; un valor no finito se trata como 0"),
+            "error_estandar": ("std_CV / sqrt(n_folds), con n_folds leido de "
+                               "AP_folds del ganador (5 en la corrida completa)"),
             "frontera": ("la igualdad cuenta como dentro del umbral (diferencia <= "
-                         "std_CV); con std_CV=0 solo los empates exactos activan "
-                         "la simplicidad"),
-            "complejidad_umap": "menor n_components; a igualdad, mayor n_neighbors",
+                         "error estandar); con std_CV=0 solo los empates exactos "
+                         "activan la simplicidad"),
+            "complejidad_umap": ("solo el numero de componentes; los vecinos no "
+                                 "cuentan como complejidad"),
             "complejidad_pca": ("menor numero de componentes ajustado; a igualdad, "
                                 "valor fijo antes que 0.95"),
+            "desempate": ("entre las candidatas elegibles de menor dimension gana la "
+                          "de mayor AP de validacion"),
             "empates": ("orden determinista por la clave de simplicidad y luego por "
                         "el orden de la rejilla"),
         },
