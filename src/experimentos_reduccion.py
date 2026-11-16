@@ -517,13 +517,9 @@ def ejecutar_experimentos(X_tr, y_tr, X_va, y_va, X_te, y_te, configuraciones,
     columnas_var = ["modelo", "componente", "varianza_explicada", "varianza_acumulada"]
     tabla_varianza = (pd.concat(curvas_varianza, ignore_index=True)
                       if curvas_varianza else pd.DataFrame(columns=columnas_var))
-    # Un archivo por familia: la grafica traza una curva por modelo.
-    tabla_varianza.to_csv(salida / "pca_varianza_familias.csv", index=False)
+    # Una sola curva por familia: la grafica las superpone.
     tabla_varianza.to_csv(salida / "pca_varianza.csv", index=False)
     if coordenadas_train:
-        pd.concat(coordenadas_train, ignore_index=True).to_csv(
-            salida / "umap2d_train.csv", index=False
-        )
         pd.concat(coordenadas_test, ignore_index=True).to_csv(
             salida / "umap2d_test.csv", index=False
         )
@@ -622,14 +618,13 @@ def ejecutar_experimentos(X_tr, y_tr, X_va, y_va, X_te, y_te, configuraciones,
         "comparaciones": ("diferencias pareadas de AP y ROC_AUC de cada variante "
                           "reducida contra la base de su familia, con IC bootstrap, "
                           "en reduccion_comparacion.csv"),
-        "varianza_pca": ("pca_varianza.csv y pca_varianza_familias.csv contienen la "
-                         "curva de varianza acumulada de PCA de cada familia; "
-                         "pca_barrido.csv es el barrido de componentes y la varianza "
-                         "acumulada de cada variante aparece en validacion y test"),
-        "coordenadas_umap2d": ("umap2d_train.csv y umap2d_test.csv por familia; UMAP "
-                               "2D con 15 vecinos ajustado solo con train y "
-                               "transformado a test; umap_2d.json repite las "
-                               "coordenadas en listas"),
+        "varianza_pca": ("pca_varianza.csv contiene la curva de varianza acumulada "
+                         "de PCA de cada familia; pca_barrido.csv es el barrido de "
+                         "componentes y la varianza acumulada de cada variante "
+                         "aparece en validacion y test"),
+        "coordenadas_umap2d": ("umap2d_test.csv y umap_2d.json guardan las "
+                               "coordenadas de prueba; UMAP 2D con 15 vecinos se "
+                               "ajusta solo con train y se transforma a test"),
         "salidas": {
             "reduccion_cv.csv": ("AP de CV por variante: modelo, metodo, "
                                  "dimensiones_solicitadas, vecinos, componentes, "
@@ -649,11 +644,7 @@ def ejecutar_experimentos(X_tr, y_tr, X_va, y_va, X_te, y_te, configuraciones,
                                 "por familia"),
             "umap_barrido.csv": ("barrido de UMAP: dimensiones, vecinos y AP de "
                                  "validacion por familia"),
-            "pca_varianza.csv": ("curva de varianza acumulada de PCA por familia; "
-                                 "mismo contenido que pca_varianza_familias.csv"),
-            "pca_varianza_familias.csv": ("curva de varianza acumulada de PCA de "
-                                          "todas las familias"),
-            "umap2d_train.csv": "coordenadas UMAP2D de train por familia",
+            "pca_varianza.csv": "curva de varianza acumulada de PCA por familia",
             "umap2d_test.csv": "coordenadas UMAP2D de test por familia",
             "umap_2d.json": ("coordenadas UMAP2D de train y test en listas, por "
                              "familia"),
