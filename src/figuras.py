@@ -30,6 +30,7 @@ DIR_RES = RAIZ / "resultados"
 DIR_INFORME = RAIZ / "informe_entregable_II_latex" / "figuras"
 
 MODELOS = ["RandomForest", "MLP", "SVM", "kNN", "Regresion_logistica"]
+DIMENSIONES_UMAP = (2, 5, 10, 15, 20)
 ETIQUETAS = {
     "RandomForest": "Random Forest",
     "MLP": "Red neuronal (MLP)",
@@ -505,6 +506,32 @@ def figura_variables(variables: pd.DataFrame, destino: Path, dpi: int = 200) -> 
     return _guardar(fig, destino, dpi)
 
 
+def _es_verdadero(valor) -> bool:
+    """Interpreta la bandera 'seleccionado' venga como bool, entero o texto."""
+    if isinstance(valor, (bool, np.bool_)):
+        return bool(valor)
+    if isinstance(valor, (int, np.integer)):
+        return bool(valor)
+    if isinstance(valor, str):
+        return valor.strip().lower() in {"true", "1", "1.0", "si", "sí"}
+    return False
+
+
+def _fila_elegida(tabla, modelo, col_x, col_ap):
+    """Coordenadas (dimension, AP) de la variante marcada como seleccionada."""
+    if "seleccionado" not in tabla.columns:
+        return None
+    sub = tabla[(tabla["modelo"].astype(str) == str(modelo))
+                & tabla["seleccionado"].map(_es_verdadero)]
+    if sub.empty:
+        return None
+    fila = sub.iloc[0]
+    x, y = fila[col_x], fila[col_ap]
+    if pd.isna(x) or pd.isna(y):
+        return None
+    return float(x), float(y)
+
+
 def figura_reduccion(
     pca_varianza: pd.DataFrame,
     pca_barrido: pd.DataFrame,
@@ -533,20 +560,33 @@ def figura_reduccion(
         curvas = [(None, sub, n_95_sin_modelo)]
     n_95 = int(np.median([curva[2] for curva in curvas]))
     selecciones = _selecciones(protocolo)
-    componentes_pca = [int(fila["componentes"]) for fila in selecciones
-                       if str(fila.get("metodo", "")).lower() == "pca"
-                       and fila.get("componentes") is not None]
-    n_pca = int(np.median(componentes_pca)) if componentes_pca else n_95
+    pca_95 = protocolo.get("pca_95") if isinstance(protocolo, dict) else None
+    if isinstance(pca_95, list) and pca_95:
+        componentes_95 = [int(fila["componentes"]) for fila in pca_95
+                          if fila.get("componentes") is not None]
+        if componentes_95:
+            n_95 = int(np.median(componentes_95))
 
-    for modelo, sub, _ in curvas:
+    # Las curvas de varianza de las familias son identicas: se dibuja una sola.
+    curvas_unicas = []
+    for modelo, sub, n_95_modelo in curvas:
+        valores = sub["varianza_acumulada"].to_numpy()
+        if any(np.allclose(valores, otra[1]["varianza_acumulada"].to_numpy())
+               for otra in curvas_unicas):
+            continue
+        curvas_unicas.append((modelo, sub, n_95_modelo))
+    etiqueta_curva = ("PCA (Random Forest y MLP)" if len(curvas_unicas) == 1
+                      and len(curvas) > 1 else None)
+
+    for modelo, sub, _ in curvas_unicas:
         ax_var.plot(sub["componente"], sub["varianza_acumulada"],
                     color=COLORES.get(modelo, "#2c7fb8"), marker="o", markersize=2.5,
                     linewidth=1.4,
-                    label=_etiqueta_modelo(modelo) if modelo else "PCA")
+                    label=etiqueta_curva or (_etiqueta_modelo(modelo) if modelo else "PCA"))
     ax_var.axhline(0.95, color="#cb181d", linestyle="--", linewidth=1,
                    label="95 % de varianza")
-    ax_var.axvline(n_pca, color="gray", linestyle=":", linewidth=1,
-                   label=f"{n_pca} componentes")
+    ax_var.axvline(n_95, color="gray", linestyle=":", linewidth=1,
+                   label=f"{n_95} componentes (95 %)")
     ax_var.set_xlabel("Número de componentes")
     ax_var.set_ylabel("Varianza acumulada")
     ax_var.set_title("(a) PCA: varianza acumulada")
@@ -566,14 +606,12 @@ def figura_reduccion(
                .sort_values(col_x_pca))
         ax_pca.plot(sub[col_x_pca], sub[col_ap_pca], marker="o", markersize=3,
                     color=COLORES.get(modelo, "C0"), label=_etiqueta_modelo(modelo))
-        for fila in selecciones:
-            if str(fila.get("modelo")) == modelo and str(fila.get("metodo", "")).lower() == "pca":
-                componente = fila.get("componentes")
-                if componente is not None and not sub.empty:
-                    cercano = sub.iloc[(sub[col_x_pca] - float(componente)).abs().argmin()]
-                    ax_pca.plot(cercano[col_x_pca], cercano[col_ap_pca], marker="*",
-                                markersize=10, color=COLORES.get(modelo, "C0"),
-                                markeredgecolor="black", markeredgewidth=0.4, linestyle="none")
+        elegida = _fila_elegida(pca, modelo, col_x_pca, col_ap_pca)
+        if elegida is not None:
+            ax_pca.plot(*elegida, marker="*", markersize=11,
+                        color=COLORES.get(modelo, "C0"),
+                        markeredgecolor="black", markeredgewidth=0.5, linestyle="none",
+                        label=f"Elegida ({_etiqueta_modelo(modelo)})")
     ax_pca.set_xlabel("Número de componentes")
     ax_pca.set_ylabel("AP de validación")
     ax_pca.set_title("(b) PCA: AP de validación")
@@ -596,17 +634,16 @@ def figura_reduccion(
             continue
         ax_umap.plot(sub[col_x_umap], sub[col_ap_umap], marker="o", markersize=3,
                      color=COLORES.get(modelo, "C0"), label=_etiqueta_modelo(modelo))
-        for fila in selecciones:
-            if str(fila.get("modelo")) == modelo and "umap" in str(fila.get("metodo", "")).lower():
-                componente = fila.get("componentes")
-                if componente is not None:
-                    cercano = sub.iloc[(sub[col_x_umap] - float(componente)).abs().argmin()]
-                    ax_umap.plot(cercano[col_x_umap], cercano[col_ap_umap], marker="*",
-                                 markersize=10, color=COLORES.get(modelo, "C0"),
-                                 markeredgecolor="black", markeredgewidth=0.4, linestyle="none")
+        elegida = _fila_elegida(umap, modelo, col_x_umap, col_ap_umap)
+        if elegida is not None:
+            ax_umap.plot(*elegida, marker="*", markersize=11,
+                         color=COLORES.get(modelo, "C0"),
+                         markeredgecolor="black", markeredgewidth=0.5, linestyle="none",
+                         label=f"Elegida ({_etiqueta_modelo(modelo)})")
     ax_umap.set_xlabel("Dimensiones UMAP")
     ax_umap.set_ylabel(etiqueta_ap_umap)
-    ax_umap.set_title("(c) UMAP: " + etiqueta_ap_umap.lower())
+    ax_umap.set_title("(c) UMAP: " + etiqueta_ap_umap)
+    ax_umap.set_xticks(list(DIMENSIONES_UMAP))
     ax_umap.yaxis.set_major_formatter(FuncFormatter(_formateador_decimal(2)))
     ax_umap.legend(fontsize=7, loc="best")
     ax_umap.grid(alpha=0.25)

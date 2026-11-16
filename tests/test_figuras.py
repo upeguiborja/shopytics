@@ -234,6 +234,30 @@ def test_representaciones_de_reduccion_ordenadas():
     assert figuras._etiqueta_representacion("UMAP2D", 2) == "UMAP 2 D (ref.)"
 
 
+def test_estrella_de_reduccion_usa_la_variante_elegida_no_el_maximo():
+    tabla = pd.DataFrame([
+        {"modelo": "RandomForest", "componentes": 10, "AP_validacion": 0.707,
+         "seleccionado": True},
+        {"modelo": "RandomForest", "componentes": 20, "AP_validacion": 0.718,
+         "seleccionado": False},
+        {"modelo": "MLP", "componentes": 15, "AP_validacion": 0.722,
+         "seleccionado": "True"},
+    ])
+    assert figuras._fila_elegida(tabla, "RandomForest", "componentes", "AP_validacion") == (10.0, 0.707)
+    assert figuras._fila_elegida(tabla, "MLP", "componentes", "AP_validacion") == (15.0, 0.722)
+    vacia = tabla.assign(seleccionado=False)
+    assert figuras._fila_elegida(vacia, "MLP", "componentes", "AP_validacion") is None
+
+
+def test_es_verdadero_acepta_bool_texto_y_entero():
+    assert figuras._es_verdadero(True)
+    assert figuras._es_verdadero("true")
+    assert figuras._es_verdadero(1)
+    assert not figuras._es_verdadero(False)
+    assert not figuras._es_verdadero("false")
+    assert not figuras._es_verdadero(np.nan)
+
+
 def test_generar_figuras_escribe_seis_de_informe_y_seis_de_notebook(tmp_path):
     resultados = _resultados_sinteticos(tmp_path / "resultados")
     informe = tmp_path / "informe"
