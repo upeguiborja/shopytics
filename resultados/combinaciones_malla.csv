@@ -1,6 +1,6 @@
 modelo,combinaciones
 Regresion_logistica,20
 kNN,56
-RandomForest,64
-MLP,48
-SVM,80
+RandomForest,280
+MLP,250
+SVM,124

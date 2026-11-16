@@ -48,6 +48,10 @@ def main(rapido=False, desde="datos"):
     def seleccionar():
         from seleccion import ejecutar_seleccion
         ejecutar_seleccion(X_tr, y_tr, X_va, y_va, salida, rapido=rapido)
+        from busqueda import mallas_ampliadas
+        from proyecto_ml import contar_combinaciones, construir_modelos
+        _, mallas = mallas_ampliadas(construir_modelos, rapido=rapido)
+        contar_combinaciones(mallas).to_csv(salida / "combinaciones_malla.csv", index=False)
 
     def evaluar():
         from evaluacion import evaluar_familias

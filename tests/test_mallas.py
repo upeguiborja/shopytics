@@ -48,13 +48,13 @@ def test_cinco_familias_con_mallas_del_plan():
     assert int(contar_combinaciones(mallas)["combinaciones"].sum()) == 268
 
 
-def test_mallas_base_coinciden_con_el_archivo_historico():
-    ruta = RAIZ / "resultados_corregidos" / "combinaciones_malla.csv"
+def test_mallas_ampliadas_coinciden_con_el_archivo_generado():
+    ruta = RAIZ / "resultados" / "combinaciones_malla.csv"
     if not ruta.exists():
-        pytest.skip("No existe el archivo historico de combinaciones")
+        pytest.skip("No existe el archivo de combinaciones generado")
     archivo = pd.read_csv(ruta).set_index("modelo")["combinaciones"].to_dict()
-    _, mallas = construir_modelos()
-    assert archivo == BASE
+    _, mallas = mallas_ampliadas(construir_modelos)
+    assert archivo == AMPLIADAS
     assert _conteos(mallas) == archivo
 
 

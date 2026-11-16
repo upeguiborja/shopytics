@@ -73,7 +73,7 @@ def test_resumen_de_particiones():
         N_TR - POS_TR, N_VA - POS_VA, N_TE - POS_TE,
     ]
 
-    ruta = RAIZ / "resultados_corregidos" / "resumen_particiones.csv"
+    ruta = RAIZ / "resultados" / "resumen_particiones.csv"
     if ruta.exists():
         pd.testing.assert_frame_equal(resumen, pd.read_csv(ruta))
 
