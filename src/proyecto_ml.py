@@ -7,6 +7,7 @@ entrenamiento mediante Pipeline/ColumnTransformer.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import platform
@@ -35,11 +36,11 @@ from sklearn.metrics import (
     roc_curve,
     precision_recall_curve,
 )
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler, OrdinalEncoder
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 from sklearn.svm import SVC
 
 SEMILLA = 42
@@ -72,7 +73,6 @@ PREDICTORAS = NUMERICAS + NOMINALES + BINARIAS + ESPECIALES
 OBJETIVO = "Revenue"
 
 DIR_RES = RAIZ / "resultados"
-DIR_FIG = DIR_RES / "figuras"
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +239,7 @@ class TransformadorUMAP(BaseEstimator, TransformerMixin):
             n_neighbors=self.n_neighbors,
             min_dist=self.min_dist,
             random_state=self.random_state,
+            compatibility_layout=True,
         )
         self.modelo_.fit(X)
         return self
@@ -254,12 +255,54 @@ class TransformadorUMAP(BaseEstimator, TransformerMixin):
         return np.asarray([f"umap_{i}" for i in range(self.n_components)], dtype=object)
 
 
+def _normalizar_excluir(excluir) -> tuple[str, ...]:
+    """Convierte excluir en una tupla validada de predictoras."""
+    if excluir is None:
+        return ()
+    if isinstance(excluir, str):
+        nombres = (excluir,)
+    else:
+        try:
+            nombres = tuple(excluir)
+        except TypeError as exc:
+            raise TypeError("excluir debe ser un iterable de nombres de columna") from exc
+    desconocidas = [c for c in nombres if c not in PREDICTORAS]
+    if desconocidas:
+        raise ValueError(f"Columnas no predictoras en excluir: {desconocidas}")
+    return nombres
+
+
 def construir_preprocesador(
     usar_log: bool = True,
     incluir_pagevalues: bool = True,
     incluir_specialday: bool = True,
+    codificar_specialday: str = "numerico",
+    excluir=None,
 ):
-    numericas = list(LOG_VARS if incluir_pagevalues else [c for c in LOG_VARS if c != "PageValues"])
+    """Construye el ColumnTransformer; toda la codificacion se ajusta en train.
+
+    excluir generaliza las banderas: los nombres indicados nunca llegan al
+    modelo, ademas de PageValues cuando incluir_pagevalues es False y de
+    SpecialDay cuando incluir_specialday es False. codificar_specialday admite
+    "numerico" (columna estandarizada) y "onehot" (seis niveles dentro del
+    bloque categorico).
+    """
+    if codificar_specialday not in {"numerico", "onehot"}:
+        raise ValueError("codificar_specialday debe ser 'numerico' o 'onehot'")
+    excluidas = set(_normalizar_excluir(excluir))
+    if not incluir_pagevalues:
+        excluidas.add("PageValues")
+    if not incluir_specialday:
+        excluidas.add("SpecialDay")
+    numericas = [c for c in LOG_VARS if c not in excluidas]
+    nominales = [c for c in NOMINALES if c not in excluidas]
+    binarias = [c for c in BINARIAS if c not in excluidas]
+    especiales_numericas = [c for c in ESPECIALES if c not in excluidas]
+    especiales_onehot = []
+    if codificar_specialday == "onehot":
+        especiales_onehot = especiales_numericas
+        especiales_numericas = []
+    categorias = nominales + especiales_onehot
     num_pipe = Pipeline(
         [
             ("imputar", SimpleImputer(strategy="median")),
@@ -273,12 +316,14 @@ def construir_preprocesador(
             ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
         ]
     )
-    transformadores = [
-        ("num", num_pipe, numericas),
-        ("cat", cat_pipe, NOMINALES),
-        ("bin", "passthrough", BINARIAS),
-    ]
-    if incluir_specialday:
+    transformadores = []
+    if numericas:
+        transformadores.append(("num", num_pipe, numericas))
+    if categorias:
+        transformadores.append(("cat", cat_pipe, categorias))
+    if binarias:
+        transformadores.append(("bin", "passthrough", binarias))
+    if especiales_numericas:
         transformadores.append(
             (
                 "esp",
@@ -288,21 +333,64 @@ def construir_preprocesador(
                         ("escalar", StandardScaler()),
                     ]
                 ),
-                ESPECIALES,
+                especiales_numericas,
             )
         )
+    if not transformadores:
+        raise ValueError("El preprocesador no tiene columnas predictoras")
     return ColumnTransformer(transformadores, remainder="drop")
 
 
-def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool = True):
+def orden_familias() -> tuple[str, ...]:
+    """Orden estable de las cinco familias, de la basica a la flexible."""
+    return ("Regresion_logistica", "kNN", "RandomForest", "MLP", "SVM")
+
+
+def leer_configuraciones(ruta) -> dict[str, dict]:
+    """Lee un CSV con una configuracion por familia (columnas modelo y params).
+
+    No fija el conjunto de familias: cada etapa decide cuales exige.
+    """
+    tabla = pd.read_csv(ruta)
+    if not {"modelo", "params"}.issubset(tabla.columns):
+        raise ValueError(f"{ruta} debe contener las columnas modelo y params")
+    if tabla["modelo"].isna().any() or tabla["modelo"].duplicated().any():
+        raise ValueError(f"{ruta} debe tener exactamente una configuracion por familia")
+    configuraciones = {}
+    for fila in tabla.itertuples(index=False):
+        try:
+            params = ast.literal_eval(fila.params)
+        except (ValueError, SyntaxError) as exc:
+            raise ValueError(f"Parametros invalidos para {fila.modelo}") from exc
+        if not isinstance(params, dict):
+            raise ValueError(f"Los parametros de {fila.modelo} deben ser un diccionario")
+        configuraciones[fila.modelo] = params
+    return configuraciones
+
+
+def construir_modelos(
+    incluir_pagevalues: bool = True,
+    incluir_specialday: bool = True,
+    codificar_specialday: str = "numerico",
+    excluir=None,
+):
     """Devuelve (modelos, mallas) con transformacion log1p como hiperparametro."""
-    pre = construir_preprocesador
+    excluir = _normalizar_excluir(excluir)
+
+    def pre():
+        return construir_preprocesador(
+            incluir_pagevalues=incluir_pagevalues,
+            incluir_specialday=incluir_specialday,
+            codificar_specialday=codificar_specialday,
+            excluir=excluir,
+        )
+
     modelos = {}
     mallas = {}
 
     modelos["Regresion_logistica"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             ("clf", LogisticRegression(solver="lbfgs", max_iter=3000, random_state=SEMILLA)),
         ]
     )
@@ -314,7 +402,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["kNN"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             ("clf", KNeighborsClassifier()),
         ]
     )
@@ -327,7 +415,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["RandomForest"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             (
                 "clf",
                 RandomForestClassifier(
@@ -346,7 +434,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["MLP"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             (
                 "clf",
                 MLPClassifier(
@@ -369,7 +457,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["SVM"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             ("clf", SVC(probability=False, random_state=SEMILLA)),
         ]
     )
@@ -477,57 +565,3 @@ def bootstrap_diferencia(y_true, score_a, score_b, metrica, n_boot=2000, semilla
     puntual = metrica(y_true, score_a) - metrica(y_true, score_b)
     inferior, superior = np.quantile(diferencias, [0.025, 0.975])
     return float(puntual), float(diferencias.mean()), float(inferior), float(superior)
-
-
-# ---------------------------------------------------------------------------
-# Entrenamiento
-# ---------------------------------------------------------------------------
-@dataclass
-class ResultadoFamilia:
-    nombre: str
-    mejor_params: dict
-    cv_ap: float
-    cv_std: float
-    modelo: object
-    tiempo: float
-
-
-def entrenar_familia(nombre, modelo, malla, X_tr, y_tr, cv, n_jobs=-1):
-    t0 = time.time()
-    gs = GridSearchCV(
-        modelo,
-        malla,
-        scoring="average_precision",
-        cv=cv,
-        n_jobs=n_jobs,
-        return_train_score=True,
-        refit=True,
-        verbose=0,
-    )
-    gs.fit(X_tr, y_tr)
-    dt = time.time() - t0
-    best_i = gs.best_index_
-    res = ResultadoFamilia(
-        nombre=nombre,
-        mejor_params=gs.best_params_,
-        cv_ap=float(gs.best_score_),
-        cv_std=float(gs.cv_results_["std_test_score"][best_i]),
-        modelo=gs.best_estimator_,
-        tiempo=dt,
-    )
-    cv_df = pd.DataFrame(gs.cv_results_).copy()
-    cv_df["modelo"] = nombre
-    cv_df["mejor"] = cv_df.index == best_i
-    return res, cv_df
-
-
-def evaluar(res: ResultadoFamilia, X, y, particion: str) -> dict:
-    y_pred = predecir(res.modelo, X)
-    y_score = puntuacion(res.modelo, X)
-    d = metricas(y, y_pred, y_score)
-    d.update({"modelo": res.nombre, "particion": particion})
-    return d
-
-
-def matriz_confusion(res: ResultadoFamilia, X, y):
-    return confusion_matrix(y, predecir(res.modelo, X), labels=[0, 1])

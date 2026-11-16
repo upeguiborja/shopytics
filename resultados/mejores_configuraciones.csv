@@ -1,6 +1,6 @@
-modelo,mejores_hiperparametros,AP_CV,std_CV,tiempo_seg
-RandomForest,"{""clf__class_weight"": null, ""clf__max_depth"": 12, ""clf__max_features"": ""sqrt"", ""clf__min_samples_leaf"": 1, ""pre__num__log__usar_log"": true}",0.7531505650864327,0.03496482251000137,52.31773233413696
-MLP,"{""clf__alpha"": 0.0001, ""clf__hidden_layer_sizes"": [64], ""clf__learning_rate_init"": 0.01, ""pre__num__log__usar_log"": true}",0.729354006574404,0.03911776363446021,13.687620401382446
-SVM,"{""clf__C"": 10, ""clf__class_weight"": null, ""clf__gamma"": 0.01, ""clf__kernel"": ""rbf"", ""pre__num__log__usar_log"": true}",0.7265851520647685,0.033579164779107676,148.88120770454407
-kNN,"{""clf__n_neighbors"": 31, ""clf__p"": 2, ""clf__weights"": ""distance"", ""pre__num__log__usar_log"": true}",0.7124325523380011,0.026955210371963894,10.32987928390503
-Regresion_logistica,"{""clf__C"": 0.1, ""clf__class_weight"": null, ""pre__num__log__usar_log"": true}",0.689678974384505,0.03196829989325587,7.087162494659424
+AP,ROC_AUC,precision,recall,F1,balanced_accuracy,accuracy,modelo,rango_cv,AP_CV,std_CV,params
+0.7414039953316898,0.9265002675636419,0.7025316455696202,0.5826771653543307,0.6370157819225251,0.7685230486965828,0.8963539532978287,RandomForest,3,0.7572728606150834,0.023407988370461923,"{'clf__class_weight': None, 'clf__max_depth': 8, 'clf__max_features': 0.7, 'clf__min_samples_leaf': 20, 'pre__num__log__usar_log': True}"
+0.7224787231125073,0.9242297989450349,0.7160883280757098,0.5958005249343832,0.6504297994269341,0.7760556022730168,0.9000409668168783,MLP,3,0.7375475324718909,0.034178719729293025,"{'clf__alpha': 0.1, 'clf__hidden_layer_sizes': (64,), 'clf__learning_rate_init': 0.03, 'pre__num__log__usar_log': True}"
+0.7054172967034158,0.9000713503045128,0.7012987012987013,0.5669291338582677,0.6269956458635704,0.7611344698417553,0.8947152806226956,SVM,2,0.7259985453336479,0.03514544996288145,"{'clf__C': 30, 'clf__class_weight': None, 'clf__gamma': 0.01, 'clf__kernel': 'rbf', 'pre__num__log__usar_log': True}"
+0.7018307073794038,0.912417501210407,0.7265625,0.4881889763779528,0.5839874411302983,0.7271041969268405,0.8914379352724293,kNN,3,0.7171979260600093,0.023194157038336927,"{'clf__n_neighbors': 81, 'clf__p': 2, 'clf__weights': 'distance', 'pre__num__log__usar_log': True}"
+0.6840864664961273,0.91231557220396,0.7170418006430869,0.5853018372703412,0.6445086705202312,0.7712916953341997,0.8992216304793118,Regresion_logistica,1,0.689678974384505,0.03196829989325587,"{'clf__C': 0.1, 'clf__class_weight': None, 'pre__num__log__usar_log': True}"

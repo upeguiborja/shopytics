@@ -1,0 +1,64 @@
+{
+  "variantes": [
+    {
+      "nombre": "completo",
+      "excluidas": []
+    },
+    {
+      "nombre": "sin_candidatas",
+      "excluidas": [
+        "Weekend",
+        "Region",
+        "Browser",
+        "VisitorType",
+        "SpecialDay",
+        "OperatingSystems"
+      ]
+    },
+    {
+      "nombre": "sin_redundantes",
+      "excluidas": [
+        "ProductRelated_Duration",
+        "BounceRates"
+      ]
+    }
+  ],
+  "candidatas": [
+    "Weekend",
+    "Region",
+    "Browser",
+    "VisitorType",
+    "SpecialDay",
+    "OperatingSystems"
+  ],
+  "criterio_candidatas": "variables con AUC univariado menor que 0.55, derivadas del propio analisis (recomendacion 'eliminar o combinar')",
+  "n_folds": 5,
+  "n_entrenamiento": 7323,
+  "n_validacion": 2441,
+  "semilla": 42,
+  "delta_AP_validacion_respecto_completo": {
+    "RandomForest": {
+      "completo": 0.0,
+      "sin_candidatas": 0.000801227419892192,
+      "sin_redundantes": -0.006631479093734849
+    },
+    "MLP": {
+      "completo": 0.0,
+      "sin_candidatas": 0.018950933652862156,
+      "sin_redundantes": 0.0025542957378927866
+    }
+  },
+  "delta_AP_CV_respecto_completo": {
+    "RandomForest": {
+      "completo": 0.0,
+      "sin_candidatas": -0.0006637706508731966,
+      "sin_redundantes": -0.008809461677284247
+    },
+    "MLP": {
+      "completo": 0.0,
+      "sin_candidatas": 0.003795345509134407,
+      "sin_redundantes": -0.001695147285218801
+    }
+  },
+  "prueba": "no participa en el analisis ni en la eliminacion"
+}
