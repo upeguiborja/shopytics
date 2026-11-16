@@ -62,17 +62,19 @@ def mallas_ampliadas(construir_modelos_fn, rapido: bool = False):
         }
         return modelos, mallas
 
+    # RF: log(1+x) es monotona y no altera particiones de arboles; no se
+    # explora usar_log para evitar candidatos duplicados en el top-k.
     mallas["RandomForest"] = {
-        "pre__num__log__usar_log": [True, False],
+        "pre__num__log__usar_log": [True],
         "clf__max_depth": [4, 6, 8, 10, 12, 20, None],
-        "clf__max_features": ["log2", "sqrt", 0.3, 0.5],
-        "clf__min_samples_leaf": [1, 5, 10],
+        "clf__max_features": ["log2", "sqrt", 0.3, 0.5, 0.7],
+        "clf__min_samples_leaf": [1, 5, 10, 20],
         "clf__class_weight": [None, "balanced"],
     }
     mallas["MLP"] = {
         "pre__num__log__usar_log": [True, False],
         "clf__hidden_layer_sizes": [(32,), (64,), (128,), (64, 32), (128, 64)],
-        "clf__alpha": [1e-5, 1e-4, 1e-3, 1e-2],
+        "clf__alpha": [1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
         "clf__learning_rate_init": [0.001, 0.01, 0.03, 0.1, 0.3],
     }
     mallas["SVM"] = [
