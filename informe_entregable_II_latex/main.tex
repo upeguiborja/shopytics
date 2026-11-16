@@ -338,10 +338,12 @@ Los tres mejores candidatos de cada familia quedan separados por menos que la de
 entre folds. En Random Forest, el mejor de la validación cruzada usa profundidad 8,
 \textit{max\_features}=0,3 y \textit{min\_samples\_leaf}=5, todos interiores a la malla. La
 configuración que gana la regla de selección usa \textit{max\_features}=0,7 y
-\textit{min\_samples\_leaf}=20, ambos en el extremo de la malla: quedan elegibles porque su
-AP de validación no baja más que el error estándar del mejor. En la MLP, el mejor de la
-validación cruzada usa $\alpha=0{,}01$, interior, y la elegida usa $\alpha=0{,}1$, el extremo
-superior; su AP de validación tampoco cae fuera de ese margen. Las diferencias entre esos
+\textit{min\_samples\_leaf}=20, ambos en el extremo de la malla: entra en el top-3 porque su
+AP de validación cruzada (0{,}7573) queda a 0{,}0018 del mejor (0{,}7591), y gana por tener
+el mayor AP de validación de los tres (0{,}7414 frente a 0{,}7352 y 0{,}7392). En la MLP, el
+mejor de la validación cruzada usa $\alpha=0{,}01$, interior, y la elegida usa
+$\alpha=0{,}1$, el extremo superior, con AP de validación 0{,}7225 frente a 0{,}7119 y
+0{,}6747. Las diferencias entre esos
 candidatos son una zona plana: no se amplió la malla otra vez porque sería perseguir
 ruido, y los extremos elegidos se documentan como tales.
 
@@ -688,9 +690,9 @@ información mutua y el color indica la recomendación descriptiva.}
 ablación de la Sección~\ref{sec:pagevalues}. Le siguen \textit{ExitRates} (0{,}710, dirección
 negativa) y las variables de producto (0{,}669 y 0{,}658). Nueve variables superan 0{,}60 y
 seis no superan 0{,}55; estas últimas son las candidatas a eliminación. El índice de Fisher
-ordena igual para las variables numéricas: 0{,}478 y 0{,}275 para las dos primeras, y
-ninguna otra supera 0{,}14; \textit{BounceRates} (0{,}138) ocupa el tercer lugar, por encima
-de \textit{ProductRelated\_Duration} (0{,}070).
+de las numéricas confirma las dos primeras (0{,}478 y 0{,}275) y deja a las demás por
+debajo de 0{,}14; solo difiere del AUC en el orden intermedio, donde \textit{BounceRates}
+sube al tercer lugar (0{,}138).
 \textit{Weekend} es indistinguible de una asignación aleatoria (0{,}504).
 
 \subsection{Redundancia y eliminación de variables}
@@ -709,8 +711,8 @@ elegir variables fuera del conjunto de ajuste.
 Quitar las seis candidatas no deteriora el AP. En validación, Random Forest pasa de
 0{,}7414 a 0{,}7422 y la MLP de 0{,}7225 a 0{,}7414; en validación cruzada, la variación
 es de $-0{,}0007$ y $+0{,}0038$, respectivamente, dentro de la desviación entre folds. En
-cambio, quitar las dos redundantes cuesta $-0{,}0066$ en Random Forest y $+0{,}0025$ en la
-MLP en validación, y $-0{,}0088$ y $-0{,}0016$ en validación cruzada. La conclusión es que
+cambio, quitar las dos redundantes cuesta $-0{,}0066$ en Random Forest y $+0{,}0026$ en la
+MLP en validación, y $-0{,}0088$ y $-0{,}0017$ en validación cruzada. La conclusión es que
 las seis variables con AUC menor que 0,55 pueden retirarse para simplificar el modelo,
 mientras que las redundantes contienen señal que no conviene descartar.
 
@@ -817,9 +819,7 @@ selección de transformaciones ajustados dentro de los folds. Random Forest gan�
 selección con AP de 0{,}7414 en validación y 0{,}7496 en prueba. La MLP quedó segunda en
 validación (0{,}7225) y prácticamente empatada en prueba (0{,}7494). Las comparaciones
 pareadas en prueba no detectan diferencia entre ambas en AP ($+0{,}0002$, IC
-$[-0{,}0190;0{,}0190]$) ni en ROC-AUC ($+0{,}0018$, IC $[-0{,}0036;0{,}0075]$); esto no
-demuestra equivalencia, sino ausencia de evidencia de diferencia con la potencia
-disponible. La elección entre ambas debe hacerse por criterios operativos:
+$[-0{,}0190;0{,}0190]$) ni en ROC-AUC ($+0{,}0018$, IC $[-0{,}0036;0{,}0075]$). La elección entre ambas debe hacerse por criterios operativos:
 interpretabilidad, costo de cómputo, calibración y perfil de errores. La brecha de
 Random Forest entre entrenamiento (0{,}8284) y validación (0{,}7414) es la más amplia
 de las cinco familias.
@@ -832,8 +832,8 @@ de bajar la precisión a 0{,}651.
 \textit{PageValues} es la variable dominante: su AUC univariado es 0{,}866 y sin ella
 el AP de validación queda entre 0{,}33 y 0{,}38, una caída de 0{,}35 a 0{,}37, muy por
 encima del efecto de cualquier hiperparámetro. \textit{ExitRates} y las variables de producto le siguen, mientras que
-\textit{Weekend}, \textit{Region}, \textit{Browser}, \textit{VisitorType} y
-\textit{SpecialDay} aportan poco. Esto delimita el alcance: el modelo sirve para analizar
+\textit{Weekend}, \textit{Region}, \textit{Browser}, \textit{VisitorType},
+\textit{SpecialDay} y \textit{OperatingSystems} aportan poco. Esto delimita el alcance: el modelo sirve para analizar
 sesiones cerradas y priorizar acciones posteriores, no para decidir durante la sesión. Un
 sistema en tiempo real tendría que operar sin \textit{PageValues} y asumir la pérdida de AP
 documentada en la Tabla~\ref{tab:pagevalues}.
@@ -869,7 +869,7 @@ simplificarse retirando las variables de menor AUC.
 
 \FloatBarrier
 
-\begin{thebibliography}{5}
+\begin{thebibliography}{8}
 
 \bibitem{ref_dataset}
 C.~Sakar and Y.~Kastro, ``Online Shoppers Purchasing Intention Dataset,'' UCI Machine
