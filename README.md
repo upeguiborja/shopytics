@@ -194,9 +194,7 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
 La segunda compilación actualiza referencias y tablas. En Windows con MiKTeX puede usarse la
-ruta completa de `pdflatex.exe`. El PDF versionado puede no coincidir con la fuente; la
-compilación local es la que manda. Para Overleaf, suba un ZIP con `main.tex`, `IEEEtran.cls`
-y `figuras/`, no el PDF suelto.
+ruta completa de `pdflatex.exe`.
 
 El notebook y el informe consumen los mismos artefactos de `resultados/`. Si se regenera una
 etapa, vuelva a ejecutar `figuras` y recompile el informe para mantener las cifras y las
@@ -224,12 +222,16 @@ Fuente: `resultados/evaluacion_familias/metricas.csv`.
 - Con el umbral de Random Forest elegido por F1 en validación (0,3195), el F1 de prueba es
   0,6904, con recall 0,7356 y precisión 0,6505. Fuente: `umbrales.csv` y
   `metricas_test_umbral.csv`.
-- Retirar `PageValues` reduce el AP de validación del ganador de 0,7414 a 0,3785
-  (Δ = 0,3629 en valor absoluto). La búsqueda completa sin la variable deja el AP entre
-  0,3345 y 0,3848 según la familia. Fuentes: `ablacion_sin_pagevalues.csv`,
-  `resumen.json` y `comparacion_pagevalues.csv`.
+- Retirar `PageValues` reduce el AP de validación entre 0,3345 y 0,3848 según la familia,
+  una caída de 0,35 a 0,37 frente al 0,7414 del modelo completo. Fuentes:
+  `comparacion_pagevalues.csv` y `resumen.json`.
 - La ablación de `SpecialDay` es marginal: el AP de validación pasa de 0,7414 a 0,7418
   (Δ = −0,0004). Fuente: `specialday_ablacion.csv`.
+- Las candidatas a eliminación salen del propio análisis: las seis variables con AUC
+  univariado menor que 0,55 (`Weekend`, `Region`, `Browser`, `VisitorType`, `SpecialDay` y
+  `OperatingSystems`). Retirarlas deja el AP de validación en 0,7422 para Random Forest y
+  0,7414 para la MLP, sin deterioro frente a 0,7414 y 0,7225. Fuente:
+  `variables/eliminacion_validacion.csv`.
 - Reducción de dimensión, con la rejilla completa del protocolo y la regla 1-SE: la base
   queda en AP de prueba 0,7496 (Random Forest) y 0,7494 (MLP). La regla eligió PCA con 10
   componentes para Random Forest (AP 0,7236) y 15 para la MLP (0,7408), y UMAP con 15
