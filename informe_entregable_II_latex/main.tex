@@ -43,14 +43,16 @@
 	gana la regla de selección con AP de 0{,}7414 en validación y 0{,}7496 en prueba; la
 	MLP alcanza 0{,}7225 y 0{,}7494. La diferencia pareada en prueba es
 	$+0{,}0002$ con IC 95\,\% $[-0{,}0190;0{,}0190]$: no se detecta diferencia entre
-	ambas, lo que no demuestra equivalencia. Random Forest sobreajusta menos que en
-	exploraciones previas (AP de entrenamiento 0{,}8284). Retirar
+	ambas, lo que no demuestra equivalencia. La brecha de Random Forest entre
+	entrenamiento y validación queda en 0{,}8284 frente a 0{,}7414. Retirar
 	\textit{PageValues} reduce el AP de validación a 0{,}3345--0{,}3848; retirar
 	\textit{SpecialDay} no produce cambios apreciables. El umbral elegido por F1 sube el
 	recall de 0{,}594 a 0{,}736 en Random Forest. Quitar las cinco variables de menor AUC
-	no deteriora el AP, de modo que el modelo puede simplificarse. PCA conserva 28
-	componentes con una pérdida pequeña de AP; UMAP reduce mucho más pero degrada el
-	desempeño. Se discuten las limitaciones del alcance post-sesión.
+	no deteriora el AP, de modo que el modelo puede simplificarse. PCA con 10 componentes
+	para Random Forest y 15 componentes para la MLP reduce la dimensión; en Random Forest el
+	AP de prueba cae 0{,}0260 y en la MLP la caída no se distingue de cero, mientras que UMAP
+	degrada el desempeño en ambas familias. Se discuten las limitaciones del alcance
+	post-sesión.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -199,7 +201,7 @@ Lin \cite{ref_lin} & SVM, XGBoost, CatBoost, red neuronal & SMOTE, Isolation For
 
 \subsection{Datos y codificación}
 
-La Tabla~\ref{tab:variables} detalla la codificación de cada variable. Las numéricas
+La Tabla~\ref{tab:variables} detalla el significado y la codificación de cada variable. Las numéricas
 (conteos, duraciones, tasas y \textit{PageValues}) se imputan con la mediana, se
 transforman con $\log(1+x)$ si el hiperparámetro lo indica y se estandarizan. La
 transformación $\log(1+x)$ admite ceros y reduce la asimetría; la decisión de usarla se
@@ -209,38 +211,38 @@ con one-hot: aunque cuatro de ellas son enteras, sus valores son códigos sin or
 tratarlas como números introduciría una distancia artificial. \textit{Weekend} pasa directo
 como 0/1 y \textit{SpecialDay} se estandariza.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{Variables del conjunto y su codificación.}
+\caption{Variables del conjunto: significado y codificación.}
 \label{tab:variables}
 \scriptsize
 \renewcommand{\arraystretch}{1.03}
-\setlength{\tabcolsep}{2pt}
-\begin{tabular}{@{}p{3.9cm} p{4.1cm}@{}}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{3.4cm} p{7.4cm} p{5.4cm}@{}}
 \toprule
-\textbf{Variable} & \textbf{Codificación} \\
+\textbf{Variable} & \textbf{Significado} & \textbf{Codificación} \\
 \midrule
-\texttt{Administrative} & $\log(1+x)$ + estandarización \\
-\texttt{Administrative\_Duration} & $\log(1+x)$ + estandarización \\
-\texttt{Informational} & $\log(1+x)$ + estandarización \\
-\texttt{Informational\_Duration} & $\log(1+x)$ + estandarización \\
-\texttt{ProductRelated} & $\log(1+x)$ + estandarización \\
-\texttt{ProductRelated\_Duration} & $\log(1+x)$ + estandarización \\
-\texttt{BounceRates} & $\log(1+x)$ + estandarización \\
-\texttt{ExitRates} & $\log(1+x)$ + estandarización \\
-\texttt{PageValues} & $\log(1+x)$ + estandarización \\
-\texttt{SpecialDay} & Estandarización \\
-\texttt{Month} & One-hot \\
-\texttt{OperatingSystems} & One-hot \\
-\texttt{Browser} & One-hot \\
-\texttt{Region} & One-hot \\
-\texttt{TrafficType} & One-hot \\
-\texttt{VisitorType} & One-hot \\
-\texttt{Weekend} & Pasa directo (0/1) \\
-\texttt{Revenue} & Etiqueta \\
+\texttt{Administrative} & Páginas administrativas visitadas & $\log(1+x)$ + estandarización \\
+\texttt{Administrative\_Duration} & Tiempo en páginas administrativas & $\log(1+x)$ + estandarización \\
+\texttt{Informational} & Páginas informativas visitadas & $\log(1+x)$ + estandarización \\
+\texttt{Informational\_Duration} & Tiempo en páginas informativas & $\log(1+x)$ + estandarización \\
+\texttt{ProductRelated} & Páginas de producto visitadas & $\log(1+x)$ + estandarización \\
+\texttt{ProductRelated\_Duration} & Tiempo en páginas de producto & $\log(1+x)$ + estandarización \\
+\texttt{BounceRates} & Tasa media de rebote de las páginas & $\log(1+x)$ + estandarización \\
+\texttt{ExitRates} & Tasa media de salida de las páginas & $\log(1+x)$ + estandarización \\
+\texttt{PageValues} & Valor medio de las páginas visitadas & $\log(1+x)$ + estandarización \\
+\texttt{SpecialDay} & Cercanía de la sesión a una fecha especial & Estandarización \\
+\texttt{Month} & Mes de la sesión & One-hot \\
+\texttt{OperatingSystems} & Sistema operativo del visitante & One-hot \\
+\texttt{Browser} & Navegador del visitante & One-hot \\
+\texttt{Region} & Región geográfica del visitante & One-hot \\
+\texttt{TrafficType} & Fuente de tráfico & One-hot \\
+\texttt{VisitorType} & Tipo de visitante (nuevo o recurrente) & One-hot \\
+\texttt{Weekend} & Indicador de fin de semana & Pasa directo (0/1) \\
+\texttt{Revenue} & Etiqueta: la sesión terminó en compra & Etiqueta \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 \begin{figure*}[t]
 \centering
@@ -379,7 +381,9 @@ En Random Forest, la profundidad tiene un efecto pequeño: 0,7292 con 6 niveles,
 con 10 y 0,7395 sin límite, con desviaciones entre folds del orden de 0,02. El número de
 variables por división pesa más: 0,7504 con \textit{max\_features}=0,5 frente a 0,7011 con
 log2. En la MLP, $\alpha=0{,}1$ obtiene el mayor AP marginal (0,7081) y la tasa 0,01 el
-mejor promedio (0,7134); tasas de 0,3 caen a 0,6411. En SVM, $C=1$ y $C=10$ son los mejores
+mejor promedio (0,7134); tasas de 0,3 caen a 0,6411. El AP marginal de la MLP sigue
+subiendo en $\alpha=0{,}1$, pero el óptimo de la validación cruzada ($\alpha=0{,}01$) es
+interior a la malla. En SVM, $C=1$ y $C=10$ son los mejores
 valores del kernel RBF (0,6733 y 0,6658) y $C=100$ el peor (0,6409). En k-NN, el AP
 marginal crece con $k$ hasta estabilizarse: 0,6512 en $k=61$, 0,6522 en $k=81$ y 0,6508 en
 $k=101$. En regresión logística, $C=0{,}1$ obtiene el mayor AP marginal (0,6629) y las
@@ -690,45 +694,50 @@ PCA y UMAP se ajustaron dentro del \texttt{Pipeline}, después del preprocesamie
 con entrenamiento. El protocolo se fijó antes de consultar prueba. Para PCA se evaluaron
 $n\in\{5,10,15,20,28,35,45\}$ y el corte que retiene el 95\,\% de la varianza. Para UMAP se
 evaluaron las quince combinaciones de $n\in\{2,5,10,15,20\}$ y vecinos
-$\in\{15,30,50\}$. Todas las variantes pasan por validación cruzada y por validación; la
-selección usa el AP de validación con una regla de simplicidad: se prefiere la variante más
-simple cuando su AP no cae más que la desviación entre folds respecto del máximo. La prueba
-se consulta solo después de fijar las variantes, y se reportan la base, PCA, UMAP y una
-proyección UMAP de dos dimensiones por familia. El experimento se ejecutó en las dos
-familias con mayor AP de validación, Random Forest y la MLP, que son las que compiten por
-el modelo final.
+$\in\{15,30,50\}$. Todas las variantes pasan por validación cruzada y por validación. La
+selección usa la regla 1-SE: se parte del mayor AP de validación y se prefiere la variante
+más simple cuando su AP no cae más que el error estándar entre folds del ganador, es decir,
+$\text{std}_{CV}/\sqrt{5}$. La complejidad se mide solo por la dimensión; entre las
+candidatas elegibles de menor dimensión gana la de mayor AP de validación. La prueba se
+consulta solo después de fijar las variantes, y se reportan la base, PCA, UMAP y una
+proyección UMAP de dos dimensiones por familia. El experimento se ejecutó en Random Forest y
+la MLP, las dos familias con mayor AP de validación.
 
 PCA necesitó 28 componentes para retener el 95\,\% de la varianza en ambas familias, cerca
 de un tercio de las 73 columnas que produce el preprocesador. El mejor AP de validación con
 PCA fue 0{,}7184 para Random Forest (45 componentes) y 0{,}7343 para la MLP (35). La regla
-de simplicidad eligió cinco componentes para Random Forest (AP 0{,}6936) y diez para la MLP
-(0{,}7113), ambos por encima del umbral de máxima AP menos una desviación entre folds. En
-UMAP, el máximo de validación fue 0{,}6959 para Random Forest (15 dimensiones, 50 vecinos)
-y 0{,}6531 para la MLP (15 dimensiones, 50 vecinos); la regla eligió 5 dimensiones con 30
-vecinos (0{,}6754) y 2 dimensiones con 50 vecinos (0{,}6377), respectivamente. La
+1-SE eligió diez componentes para Random Forest (AP 0{,}7074) y quince para la MLP
+(0{,}7219), ambos por encima del umbral de máxima AP menos el error estándar. En UMAP, el
+máximo de validación fue 0{,}6959 para Random Forest (15 dimensiones, 50 vecinos) y
+0{,}6531 para la MLP (15 dimensiones, 50 vecinos); la regla eligió 15 dimensiones con 50
+vecinos (0{,}6959) y 5 dimensiones con 30 vecinos (0{,}6484), respectivamente. La
 representación completa ya era la mejor en validación para ambas familias (0{,}7414 y
 0{,}7225), de modo que ninguna variante reducida la superó antes de consultar prueba.
 
-En prueba, la reducción no mejora el AP y los ocho intervalos pareados contra la base
-excluyen cero. Random Forest cae de 0{,}7496 a 0{,}6897 con PCA ($-0{,}0598$, IC
-$[-0{,}0823;-0{,}0373]$), a 0{,}6663 con UMAP ($-0{,}0833$) y a 0{,}6595 con UMAP de dos
-dimensiones ($-0{,}0900$). La MLP cae menos con PCA, de 0{,}7494 a 0{,}7284 ($-0{,}0210$,
-IC $[-0{,}0378;-0{,}0048]$), pero pierde 0{,}1145 con UMAP y 0{,}1679 con UMAP de dos
-dimensiones. El ROC-AUC acompaña al AP: la caída es $-0{,}0260$ para Random Forest con PCA
-(IC $[-0{,}0348;-0{,}0179]$) y $-0{,}0128$ para la MLP con PCA (IC $[-0{,}0204;-0{,}0056]$).
+En prueba, la reducción no mejora el AP. Random Forest cae de 0{,}7496 a 0{,}7236 con PCA
+($-0{,}0260$, IC $[-0{,}0438;-0{,}0090]$), a 0{,}6879 con UMAP ($-0{,}0616$, IC
+$[-0{,}0893;-0{,}0353]$) y a 0{,}6595 con UMAP de dos dimensiones ($-0{,}0900$). La MLP
+cae menos con PCA, de 0{,}7494 a 0{,}7408 ($-0{,}0086$, IC $[-0{,}0219;0{,}0050]$), pero
+pierde 0{,}1113 con UMAP (AP 0{,}6381) y 0{,}1679 con UMAP de dos dimensiones. El ROC-AUC
+acompaña al AP: la caída es $-0{,}0167$ para Random Forest con PCA (IC $[-0{,}0246;-0{,}0093]$) y
+$-0{,}0029$ para la MLP con PCA (IC $[-0{,}0084;0{,}0030]$). Diez de los doce intervalos
+pareados excluyen cero; los dos restantes, los de la MLP con PCA, no permiten descartar una
+pérdida nula.
 
-El patrón es consistente con la estructura del problema: la señal útil está dispersa en las
-variables originales y las transformaciones no supervisadas no la concentran. La MLP tolera
-mejor PCA porque su capa oculta ya impone una compresión, pero la pérdida sigue siendo
-detectable. Con este protocolo, reducir dimensiones no simplifica sin costo: la base se
+La señal útil está dispersa en las variables originales y las transformaciones no
+supervisadas no la concentran. La MLP tolera mejor PCA porque su capa oculta ya impone una
+compresión, y en su caso la pérdida no es detectable; en Random Forest, en cambio, PCA y
+UMAP cuestan AP de forma clara. Reducir dimensiones no simplifica sin costo: la base se
 mantiene para el modelo final y PCA y UMAP quedan como análisis de sensibilidad.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.86\textwidth]{figuras/fig05_reduccion.png}
-\caption{Reducción de dimensión. (a) Varianza acumulada de PCA con el corte del 95\,\%.
-(b) AP de validación frente al número de componentes de PCA. (c) AP de validación frente a
-la dimensión de UMAP.}
+\caption{Reducción de dimensión. (a) Varianza acumulada de PCA; la línea vertical marca los
+28 componentes que retienen el 95\,\% y las curvas de ambas familias coinciden. (b) AP de
+validación frente al número de componentes de PCA. (c) AP de validación frente a la
+dimensión de UMAP, con el máximo por dimensión. En (b) y (c) la estrella marca la variante
+elegida por la regla 1-SE.}
 \label{fig:reduccion}
 \end{figure*}
 
@@ -751,18 +760,18 @@ pareadas en prueba no detectan diferencia entre ambas en AP ($+0{,}0002$, IC
 $[-0{,}0190;0{,}0190]$) ni en ROC-AUC ($+0{,}0018$, IC $[-0{,}0036;0{,}0075]$); esto no
 demuestra equivalencia, sino ausencia de evidencia de diferencia con la potencia
 disponible. La elección entre ambas debe hacerse por criterios operativos:
-interpretabilidad, costo de cómputo, calibración y perfil de errores. Random Forest
-sobreajusta menos que en exploraciones previas (AP de entrenamiento 0{,}8284 frente a
-0{,}9661), lo que reduce la brecha entre entrenamiento y despliegue.
+interpretabilidad, costo de cómputo, calibración y perfil de errores. La brecha de
+Random Forest entre entrenamiento (0{,}8284) y validación (0{,}7414) es la más amplia
+de las cinco familias.
 
 El umbral de decisión es una decisión de negocio. Con el umbral nativo, Random Forest
 privilegia la precisión y deja escapar cuatro de cada diez compras (recall 0{,}594). Con el
 umbral ajustado por F1 en validación, el recall sube a 0{,}736 y el F1 a 0{,}690, a costa
 de bajar la precisión a 0{,}651.
 
-\textit{PageValues} es la variable dominante: su AUC univariado es 0{,}866 y retirarla
-reduce el AP de validación entre 0{,}33 y 0{,}38, muy por encima del efecto de cualquier
-hiperparámetro. \textit{ExitRates} y las variables de producto le siguen, mientras que
+\textit{PageValues} es la variable dominante: su AUC univariado es 0{,}866 y sin ella
+el AP de validación queda entre 0{,}33 y 0{,}38, una caída de 0{,}35 a 0{,}37, muy por
+encima del efecto de cualquier hiperparámetro. \textit{ExitRates} y las variables de producto le siguen, mientras que
 \textit{Weekend}, \textit{Region}, \textit{Browser}, \textit{VisitorType} y
 \textit{SpecialDay} aportan poco. Esto delimita el alcance: el modelo sirve para analizar
 sesiones cerradas y priorizar acciones posteriores, no para decidir durante la sesión. Un
@@ -771,9 +780,10 @@ documentada en la Tabla~\ref{tab:pagevalues}.
 
 ¿Es posible reducir la complejidad del modelo final? Sí, en dos sentidos. En variables,
 quitar las cinco candidatas no deteriora el AP y simplifica el modelo; no conviene, en
-cambio, quitar las redundantes. En dimensión, PCA conserva la mayor parte de la señal con
-una pérdida pequeña de AP, mientras que UMAP degrada el desempeño de forma marcada; para
-este problema, UMAP sirve para visualizar, no para modelar. Un modelo final razonable es
+cambio, quitar las redundantes. En dimensión, PCA conserva buena parte de la señal: con 10
+componentes en Random Forest el AP de prueba cae 0{,}0260 y con 15 en la MLP la caída no se
+distingue de cero. UMAP, en cambio, degrada el desempeño de forma marcada en ambas familias;
+para este problema sirve para visualizar, no para modelar. Un modelo final razonable es
 Random Forest con las cinco candidatas retiradas, sin reducción de dimensión, y un umbral
 elegido según el costo relativo de los errores.
 
