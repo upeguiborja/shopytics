@@ -239,6 +239,7 @@ class TransformadorUMAP(BaseEstimator, TransformerMixin):
             n_neighbors=self.n_neighbors,
             min_dist=self.min_dist,
             random_state=self.random_state,
+            compatibility_layout=True,
         )
         self.modelo_.fit(X)
         return self

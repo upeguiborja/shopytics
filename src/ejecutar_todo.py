@@ -1,4 +1,4 @@
-"""Ejecuta las etapas reproducibles; --desde reutiliza resultados previos."""
+"""Ejecuta las etapas reproducibles; --desde y --hasta reutilizan resultados previos."""
 
 from __future__ import annotations
 
@@ -15,9 +15,13 @@ from proyecto_ml import RAIZ, SEMILLA, auditar, cargar_datos, particionar, resum
 ETAPAS = ("datos", "busqueda", "evaluacion", "sensibilidad", "specialday", "variables", "reduccion", "figuras")
 
 
-def main(rapido=False, desde="datos"):
+def main(rapido=False, desde="datos", hasta="figuras"):
     if desde not in ETAPAS:
         raise ValueError(f"Etapa desconocida: {desde}")
+    if hasta not in ETAPAS:
+        raise ValueError(f"Etapa desconocida: {hasta}")
+    if ETAPAS.index(hasta) < ETAPAS.index(desde):
+        raise ValueError(f"Rango vacio: --hasta {hasta} es anterior a --desde {desde}")
     salida = RAIZ / ("resultados_rapido" if rapido else "resultados")
     salida.mkdir(parents=True, exist_ok=True)
     datos = cargar_datos()
@@ -30,7 +34,7 @@ def main(rapido=False, desde="datos"):
     etapas_anteriores = anterior.get("duracion_etapas_seg", {})
 
     def etapa(nombre, funcion):
-        if ETAPAS.index(nombre) < ETAPAS.index(desde):
+        if not ETAPAS.index(desde) <= ETAPAS.index(nombre) <= ETAPAS.index(hasta):
             return
         print(f"Etapa: {nombre}", flush=True)
         inicio = time.perf_counter()
@@ -91,6 +95,7 @@ def main(rapido=False, desde="datos"):
     manifiesto = {"sha256_datos": auditar(datos)["sha256"], "semilla": SEMILLA,
                   "fecha_utc": datetime.now(timezone.utc).isoformat(), "python": platform.python_version(),
                   "versiones": versiones, "rapido": rapido, "desde": desde,
+                  "hasta": hasta,
                   "n_train": len(itr), "n_validacion": len(iva), "n_test": len(ite),
                   "duracion_etapas_seg": {**etapas_anteriores, **duraciones}}
     manifiesto_ruta.write_text(json.dumps(manifiesto, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -100,5 +105,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rapido", action="store_true", help="prueba de humo con calculos reducidos")
     parser.add_argument("--desde", choices=ETAPAS, default="datos")
+    parser.add_argument("--hasta", choices=ETAPAS, default="figuras")
     args = parser.parse_args()
-    main(args.rapido, args.desde)
+    main(args.rapido, args.desde, args.hasta)

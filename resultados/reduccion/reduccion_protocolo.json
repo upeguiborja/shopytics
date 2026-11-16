@@ -1,11 +1,197 @@
 {
   "rapido": false,
+  "semilla": 42,
+  "n_boot": 2000,
   "n_entrenamiento": 7323,
+  "n_validacion": 2441,
+  "n_test": 2441,
   "n_folds": 5,
   "seleccion_familias": "dos mayores AP de validacion del CSV; empate por nombre",
-  "pca": "minimo numero de componentes que conserva al menos 95% de varianza en cada ajuste",
-  "umap": "2, 5 y 10 dimensiones; dos mejores por AP-CV, seleccion por AP de validacion; empate menor dimension",
-  "prueba": "solo reporte de PCA y UMAP seleccionados por familia, sin decisiones",
+  "candidatos_pca": [
+    "5",
+    "10",
+    "15",
+    "20",
+    "28",
+    "35",
+    "45",
+    "0.95"
+  ],
+  "candidatos_pca_por_familia": [
+    {
+      "modelo": "RandomForest",
+      "candidatos_pca": [
+        "5",
+        "10",
+        "15",
+        "20",
+        "28",
+        "35",
+        "45",
+        "0.95"
+      ],
+      "candidatos_pca_usados": [
+        "5",
+        "10",
+        "15",
+        "20",
+        "28",
+        "35",
+        "45",
+        "0.95"
+      ],
+      "descartados": [],
+      "motivo_descarte": "mas componentes que variables tras el preprocesador",
+      "n_features_preprocesadas": 73
+    },
+    {
+      "modelo": "MLP",
+      "candidatos_pca": [
+        "5",
+        "10",
+        "15",
+        "20",
+        "28",
+        "35",
+        "45",
+        "0.95"
+      ],
+      "candidatos_pca_usados": [
+        "5",
+        "10",
+        "15",
+        "20",
+        "28",
+        "35",
+        "45",
+        "0.95"
+      ],
+      "descartados": [],
+      "motivo_descarte": "mas componentes que variables tras el preprocesador",
+      "n_features_preprocesadas": 73
+    }
+  ],
+  "rejilla_umap": [
+    {
+      "dimensiones": 2,
+      "vecinos": 15
+    },
+    {
+      "dimensiones": 2,
+      "vecinos": 30
+    },
+    {
+      "dimensiones": 2,
+      "vecinos": 50
+    },
+    {
+      "dimensiones": 5,
+      "vecinos": 15
+    },
+    {
+      "dimensiones": 5,
+      "vecinos": 30
+    },
+    {
+      "dimensiones": 5,
+      "vecinos": 50
+    },
+    {
+      "dimensiones": 10,
+      "vecinos": 15
+    },
+    {
+      "dimensiones": 10,
+      "vecinos": 30
+    },
+    {
+      "dimensiones": 10,
+      "vecinos": 50
+    },
+    {
+      "dimensiones": 15,
+      "vecinos": 15
+    },
+    {
+      "dimensiones": 15,
+      "vecinos": 30
+    },
+    {
+      "dimensiones": 15,
+      "vecinos": 50
+    },
+    {
+      "dimensiones": 20,
+      "vecinos": 15
+    },
+    {
+      "dimensiones": 20,
+      "vecinos": 30
+    },
+    {
+      "dimensiones": 20,
+      "vecinos": 50
+    }
+  ],
+  "umap_validacion": "las quince configuraciones pasan por CV y por validacion; ninguna se descarta antes de la validacion",
+  "pca": "barrido 5, 10, 15, 20, 28, 35, 45, 0.95; CV y validacion para todas las variantes; varianza acumulada por variante y curva de varianza por familia",
+  "umap": "rejilla 5x3; CV y validacion para todas las configuraciones; seleccion final por AP de validacion",
+  "regla_simplicidad": {
+    "criterio": "se parte del mayor AP de validacion; una variante mas simple lo sustituye si su AP_validacion >= AP_max - std_CV del ganador",
+    "desviacion": "std_CV poblacional entre folds del candidato con mayor AP de validacion; un valor no finito se trata como 0",
+    "frontera": "la igualdad cuenta como dentro del umbral (diferencia <= std_CV); con std_CV=0 solo los empates exactos activan la simplicidad",
+    "complejidad_umap": "menor n_components; a igualdad, mayor n_neighbors",
+    "complejidad_pca": "menor numero de componentes ajustado; a igualdad, valor fijo antes que 0.95",
+    "empates": "orden determinista por la clave de simplicidad y luego por el orden de la rejilla"
+  },
+  "variantes_test": {
+    "Base": "modelo de la familia sin reduccion",
+    "PCA": "variante de PCA seleccionada en validacion",
+    "UMAP": "variante de UMAP seleccionada en validacion",
+    "UMAP2D": "UMAP con 2 dimensiones y 15 vecinos por familia, sin seleccion"
+  },
+  "prueba": "test se consulta solo despues de fijar todas las variantes; no participa en la seleccion",
+  "bootstrap": "estratificado por clase, condicionado a las puntuaciones fijas; los IC individuales de cada metrica van como columnas en reduccion_test.csv",
+  "comparaciones": "diferencias pareadas de AP y ROC_AUC de cada variante reducida contra la base de su familia, con IC bootstrap, en reduccion_comparacion.csv",
+  "varianza_pca": "pca_varianza.csv y pca_varianza_familias.csv contienen la curva de varianza acumulada de PCA de cada familia; pca_barrido.csv es el barrido de componentes y la varianza acumulada de cada variante aparece en validacion y test",
+  "coordenadas_umap2d": "umap2d_train.csv y umap2d_test.csv por familia; UMAP 2D con 15 vecinos ajustado solo con train y transformado a test; umap_2d.json repite las coordenadas en listas",
+  "salidas": {
+    "reduccion_cv.csv": "AP de CV por variante: modelo, metodo, dimensiones_solicitadas, vecinos, componentes, AP_CV, std_CV, AP_folds, finalista",
+    "reduccion_validacion.csv": "AP y metricas de validacion de todas las variantes, con varianza acumulada, seleccionado y motivo de la regla de simplicidad",
+    "reduccion_test.csv": "base, PCA seleccionado, UMAP seleccionado y UMAP 2D por familia, con bootstrap IC individual por metrica en columnas",
+    "reduccion_comparacion.csv": "diferencias pareadas de AP y ROC_AUC contra la base: modelo, metodo, metrica, valor, valor_base, diferencia_puntual, media_bootstrap, ic_inferior, ic_superior",
+    "pca_barrido.csv": "barrido de PCA: componentes y AP de validacion por familia",
+    "umap_barrido.csv": "barrido de UMAP: dimensiones, vecinos y AP de validacion por familia",
+    "pca_varianza.csv": "curva de varianza acumulada de PCA por familia; mismo contenido que pca_varianza_familias.csv",
+    "pca_varianza_familias.csv": "curva de varianza acumulada de PCA de todas las familias",
+    "umap2d_train.csv": "coordenadas UMAP2D de train por familia",
+    "umap2d_test.csv": "coordenadas UMAP2D de test por familia",
+    "umap_2d.json": "coordenadas UMAP2D de train y test en listas, por familia"
+  },
+  "computo": {
+    "rejilla_umap": "5x3 = 15 configuraciones por familia",
+    "folds": 5,
+    "ajustes_por_familia": {
+      "pca": "8 candidatos x 5 folds de CV + 8 ajustes sobre train",
+      "umap": "15 configuraciones x 5 folds de CV + 15 ajustes sobre train",
+      "umap2d": "1 ajuste sobre train por familia"
+    },
+    "estimacion": "la rejilla UMAP completa es la parte con fuerte coste de computo: quince configuraciones por familia con CV y validacion; no se ejecuta en modo rapido",
+    "modo_rapido": "UMAP (2, 15), PCA (5, 15, 0.95), 2 folds, hasta 600 filas de train y bootstrap <= 20; solo prueba de humo"
+  },
+  "limitacion": "la particion de prueba fue consultada historicamente; los IC son condicionales a las variantes fijadas",
+  "pca_95": [
+    {
+      "modelo": "RandomForest",
+      "componentes": 28,
+      "varianza_acumulada": 0.9533671028435566
+    },
+    {
+      "modelo": "MLP",
+      "componentes": 28,
+      "varianza_acumulada": 0.9533671028435566
+    }
+  ],
   "configuraciones": [
     {
       "modelo": "RandomForest",
@@ -20,26 +206,66 @@
     {
       "modelo": "RandomForest",
       "metodo": "PCA",
-      "componentes": 28,
-      "AP_validacion": 0.7164825023437467
+      "dimensiones_solicitadas": 5,
+      "componentes": 5,
+      "vecinos": null,
+      "AP_CV": 0.7021700837147091,
+      "std_CV": 0.025421436403660135,
+      "AP_validacion": 0.6936419594278787,
+      "varianza_acumulada": 0.6563863270445283,
+      "motivo_seleccion": "simplicidad",
+      "diferencia_con_max": 0.024753123217513107,
+      "umbral_simplicidad": 0.687251163438796,
+      "desviacion_std_CV": 0.031143919206595757,
+      "AP_max_validacion": 0.7183950826453918
     },
     {
       "modelo": "RandomForest",
       "metodo": "UMAP",
-      "componentes": 10,
-      "AP_validacion": 0.6833875463561996
+      "dimensiones_solicitadas": 5,
+      "componentes": 5,
+      "vecinos": 30,
+      "AP_CV": 0.6937239707665052,
+      "std_CV": 0.027707762763007016,
+      "AP_validacion": 0.6754204696765719,
+      "varianza_acumulada": null,
+      "motivo_seleccion": "simplicidad",
+      "diferencia_con_max": 0.020474494308928115,
+      "umbral_simplicidad": 0.6743067312702623,
+      "desviacion_std_CV": 0.02158823271523768,
+      "AP_max_validacion": 0.6958949639855
     },
     {
       "modelo": "MLP",
       "metodo": "PCA",
-      "componentes": 28,
-      "AP_validacion": 0.7332793345831674
+      "dimensiones_solicitadas": 10,
+      "componentes": 10,
+      "vecinos": null,
+      "AP_CV": 0.7287511549952537,
+      "std_CV": 0.03359769551041018,
+      "AP_validacion": 0.7112920952603408,
+      "varianza_acumulada": 0.8038018463492033,
+      "motivo_seleccion": "simplicidad",
+      "diferencia_con_max": 0.023025704343742626,
+      "umbral_simplicidad": 0.6986605645981188,
+      "desviacion_std_CV": 0.03565723500596463,
+      "AP_max_validacion": 0.7343177996040834
     },
     {
       "modelo": "MLP",
       "metodo": "UMAP",
-      "componentes": 10,
-      "AP_validacion": 0.635099355707068
+      "dimensiones_solicitadas": 2,
+      "componentes": 2,
+      "vecinos": 50,
+      "AP_CV": 0.6623504471985223,
+      "std_CV": 0.02301234335995028,
+      "AP_validacion": 0.6377240983710605,
+      "varianza_acumulada": null,
+      "motivo_seleccion": "simplicidad",
+      "diferencia_con_max": 0.01536620803080846,
+      "umbral_simplicidad": 0.6243663472671492,
+      "desviacion_std_CV": 0.028723959134719698,
+      "AP_max_validacion": 0.6530903064018689
     }
   ]
 }
