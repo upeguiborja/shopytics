@@ -12,9 +12,14 @@
 \usepackage{url}
 \usepackage{graphicx}
 \usepackage{cite}
+\usepackage{placeins}
 \setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
 \setlength{\floatsep}{5pt plus 2pt minus 2pt}
 \setlength{\intextsep}{5pt plus 2pt minus 2pt}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.7}
 
 \begin{document}
 
@@ -39,7 +44,7 @@
 	la sesión. Todo el preprocesamiento se ajusta dentro de los folds de entrenamiento; el
 	20\,\% de validación elige entre finalistas y la prueba solo se reporta. Se comparan
 	regresión logística, k-NN, Random Forest, una red neuronal (MLP) y SVM con mallas de
-	hasta 730 combinaciones, intervalos bootstrap y comparaciones pareadas. Random Forest
+	730 combinaciones en total, intervalos bootstrap y comparaciones pareadas. Random Forest
 	gana la regla de selección con AP de 0{,}7414 en validación y 0{,}7496 en prueba; la
 	MLP alcanza 0{,}7225 y 0{,}7494. La diferencia pareada en prueba es
 	$+0{,}0002$ con IC 95\,\% $[-0{,}0190;0{,}0190]$: no se detecta diferencia entre
@@ -103,18 +108,13 @@ limitaciones.
 
 Una sesión reúne el rastro agregado de un visitante: páginas consultadas, tiempo dedicado,
 tasas de rebote y salida, valor de las páginas visitadas, cercanía a fechas especiales y
-características del dispositivo y de la fuente de tráfico. La etiqueta \textit{Revenue}
-resume si la sesión terminó en compra. La predicción post-sesión sirve para segmentar
-clientes, priorizar campañas de recuperación y analizar qué perfiles convierten; también
-sirve como línea base para un escenario operativo en el que la decisión deba tomarse antes
-del cierre, pero ese escenario exige excluir las variables construidas con el resultado y
-se trata aquí solo como sensibilidad.
-
-La utilidad práctica depende del costo relativo de los errores. Un falso positivo implica
-destinar una acción a una sesión que no comprará; un falso negativo implica perder una
-compra que podría haberse recuperado. Por eso se reportan métricas de ranking (AP y
-ROC-AUC), métricas de decisión (F1, precisión, recall y exactitud balanceada) y el efecto
-de mover el umbral.
+características del dispositivo y de la fuente de tráfico; la etiqueta \textit{Revenue}
+indica si terminó en compra. La predicción post-sesión sirve para segmentar clientes,
+priorizar campañas de recuperación y analizar qué perfiles convierten. Su utilidad depende
+del costo relativo de los errores: un falso positivo destina una acción a quien no comprará
+y un falso negativo pierde una compra recuperable. Por eso se reportan métricas de ranking
+(AP y ROC-AUC), de decisión (F1, precisión, recall y exactitud balanceada) y el efecto de
+mover el umbral.
 
 \subsection{Composición de los datos}
 
@@ -123,8 +123,9 @@ y la etiqueta binaria \textit{Revenue}. La prevalencia de compra es del 15,47\,\
 (1\,908 sesiones con compra frente a 10\,422 sin compra), lo que confirma un desbalance
 marcado. La auditoría no encontró valores faltantes y sí 125 filas duplicadas exactas,
 agrupadas en 201 filas; todas son sesiones sin compra y todas tienen
-\textit{BounceRates} igual a 0,2. Se eliminaron antes de particionar para evitar que una
-misma sesión apareciera en entrenamiento y prueba. La decisión reduce el tamaño en 125
+\textit{BounceRates} igual a 0,2, de modo que son filas idénticas de sesiones de rebote
+que no pueden distinguirse entre sí. Se eliminaron antes de particionar como control de
+fuga, para que una fila idéntica no apareciera a la vez en entrenamiento y prueba. La decisión reduce el tamaño en 125
 filas (1,0\,\%) y no altera la clase positiva.
 
 Los atributos se agrupan en conteos de páginas administrativas, informativas y de
@@ -159,14 +160,18 @@ sintéticos.
 \label{sec:estado}
 
 La literatura que usa la misma base de datos permite situar los resultados
-(Tabla~\ref{tab:estado}). Sakar \textit{et al.} \cite{ref_sakar} aplican sobremuestreo y
-selección de variables y reportan 87,24\,\% de exactitud y F1 0,86 con una MLP en el
-módulo de intención de compra de un sistema que incluye además un módulo LSTM para
-abandono. Necula \cite{ref_necula} combina K-means y PCA con ADASYN y obtiene un ROC-AUC
-de 0,9777 en validación cruzada y 0,8973 en prueba con Random Forest. Satu e Islam
-\cite{ref_satu} prueban SMOTE, tres escalados y filtros de variables y alcanzan 92,39\,\%
-de exactitud y F1 0,924. Lin \cite{ref_lin} usa SMOTE, Isolation Forest y búsqueda de
-hiperparámetros y reporta, con CatBoost, precisión 0,934, recall 0,935 y ROC-AUC 0,985.
+(Tabla~\ref{tab:estado}). Los cuatro trabajos son supervisados y parten de la etiqueta
+\textit{Revenue}. Sakar \textit{et al.} \cite{ref_sakar} aplican sobremuestreo y selección de
+variables por correlación, información mutua y máxima relevancia--mínima redundancia (mRMR)
+y reportan 87,24\,\% de exactitud y F1 0,86 con una MLP en el módulo de intención de compra
+de un sistema que incluye además un módulo LSTM para abandono. Necula \cite{ref_necula}
+combina K-means y PCA con ADASYN y obtiene un ROC-AUC de 0,9777 en validación cruzada y
+0,8973 en prueba con Random Forest. Satu e Islam \cite{ref_satu} prueban SMOTE, tres
+escalados y filtros de variables, entre ellos el filtro de correlación (CFS), la búsqueda
+hacia adelante y hacia atrás (BFS) y algoritmos genéticos de selección (GRAE, IGAE), y
+alcanzan 92,39\,\% de exactitud y F1 0,924. Lin \cite{ref_lin} usa SMOTE, Isolation Forest y
+búsqueda de hiperparámetros y reporta, con CatBoost, precisión 0,934, recall 0,935 y ROC-AUC
+0,985.
 
 Las cifras son las reportadas por los autores, no reproducidas aquí, y no son comparables
 entre sí porque cambian la partición, el balanceo y el protocolo de validación. En Lin, el
@@ -213,40 +218,41 @@ como 0/1 y \textit{SpecialDay} se estandariza.
 
 \begin{table*}[t]
 \centering
-\caption{Variables del conjunto: significado y codificación.}
+\caption{Variables del conjunto: tipo, significado y codificación. Tipo: Num. numérica,
+Ord. ordinal, Nom. nominal y Bin. binaria.}
 \label{tab:variables}
 \scriptsize
 \renewcommand{\arraystretch}{1.03}
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}p{3.4cm} p{7.4cm} p{5.4cm}@{}}
+\begin{tabular}{@{}p{3.3cm} p{1.5cm} p{6.3cm} p{4.6cm}@{}}
 \toprule
-\textbf{Variable} & \textbf{Significado} & \textbf{Codificación} \\
+\textbf{Variable} & \textbf{Tipo} & \textbf{Significado} & \textbf{Codificación} \\
 \midrule
-\texttt{Administrative} & Páginas administrativas visitadas & $\log(1+x)$ + estandarización \\
-\texttt{Administrative\_Duration} & Tiempo en páginas administrativas & $\log(1+x)$ + estandarización \\
-\texttt{Informational} & Páginas informativas visitadas & $\log(1+x)$ + estandarización \\
-\texttt{Informational\_Duration} & Tiempo en páginas informativas & $\log(1+x)$ + estandarización \\
-\texttt{ProductRelated} & Páginas de producto visitadas & $\log(1+x)$ + estandarización \\
-\texttt{ProductRelated\_Duration} & Tiempo en páginas de producto & $\log(1+x)$ + estandarización \\
-\texttt{BounceRates} & Tasa media de rebote de las páginas & $\log(1+x)$ + estandarización \\
-\texttt{ExitRates} & Tasa media de salida de las páginas & $\log(1+x)$ + estandarización \\
-\texttt{PageValues} & Valor medio de las páginas visitadas & $\log(1+x)$ + estandarización \\
-\texttt{SpecialDay} & Cercanía de la sesión a una fecha especial & Estandarización \\
-\texttt{Month} & Mes de la sesión & One-hot \\
-\texttt{OperatingSystems} & Sistema operativo del visitante & One-hot \\
-\texttt{Browser} & Navegador del visitante & One-hot \\
-\texttt{Region} & Región geográfica del visitante & One-hot \\
-\texttt{TrafficType} & Fuente de tráfico & One-hot \\
-\texttt{VisitorType} & Tipo de visitante (nuevo o recurrente) & One-hot \\
-\texttt{Weekend} & Indicador de fin de semana & Pasa directo (0/1) \\
-\texttt{Revenue} & Etiqueta: la sesión terminó en compra & Etiqueta \\
+\texttt{Administrative} & Num. & Páginas administrativas visitadas & $\log(1+x)$ + estandarización \\
+\texttt{Administrative\_Duration} & Num. & Tiempo en páginas administrativas & $\log(1+x)$ + estandarización \\
+\texttt{Informational} & Num. & Páginas informativas visitadas & $\log(1+x)$ + estandarización \\
+\texttt{Informational\_Duration} & Num. & Tiempo en páginas informativas & $\log(1+x)$ + estandarización \\
+\texttt{ProductRelated} & Num. & Páginas de producto visitadas & $\log(1+x)$ + estandarización \\
+\texttt{ProductRelated\_Duration} & Num. & Tiempo en páginas de producto & $\log(1+x)$ + estandarización \\
+\texttt{BounceRates} & Num. & Tasa media de rebote de las páginas & $\log(1+x)$ + estandarización \\
+\texttt{ExitRates} & Num. & Tasa media de salida de las páginas & $\log(1+x)$ + estandarización \\
+\texttt{PageValues} & Num. & Valor medio de las páginas visitadas & $\log(1+x)$ + estandarización \\
+\texttt{SpecialDay} & Ord. & Cercanía de la sesión a una fecha especial & Estandarización \\
+\texttt{Month} & Nom. & Mes de la sesión & One-hot \\
+\texttt{OperatingSystems} & Nom. & Sistema operativo del visitante & One-hot \\
+\texttt{Browser} & Nom. & Navegador del visitante & One-hot \\
+\texttt{Region} & Nom. & Región geográfica del visitante & One-hot \\
+\texttt{TrafficType} & Nom. & Fuente de tráfico & One-hot \\
+\texttt{VisitorType} & Nom. & Tipo de visitante (nuevo o recurrente) & One-hot \\
+\texttt{Weekend} & Bin. & Indicador de fin de semana & Pasa directo (0/1) \\
+\texttt{Revenue} & Bin. & Etiqueta: la sesión terminó en compra & Etiqueta \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.88\textwidth]{figuras/fig01_clases_cobertura.png}
+\includegraphics[width=0.74\textwidth]{figuras/fig01_clases_cobertura.png}
 \caption{Exploración del conjunto. (a) Distribución de clases: 10\,422 sesiones sin
 compra y 1\,908 con compra. (b) Cobertura mensual y tasa de compra en entrenamiento; no
 hay sesiones de enero ni de abril.}
@@ -320,19 +326,24 @@ Regresión logística & $C\in\{0{,}01;0{,}1;1;10;100\}$; \textit{class\_weight} 
 k-NN & $k\in\{5;15;31;45;61;81;101\}$; \textit{weights} $\in\{\text{uniform},\text{distance}\}$; $p\in\{1;2\}$; $\log(1+x)\in\{\text{sí},\text{no}\}$ & 56 \\
 Random Forest & \textit{max\_depth} $\in\{4;6;8;10;12;20;\text{sin límite}\}$; \textit{max\_features} $\in\{\text{log2},\text{sqrt};0{,}3;0{,}5;0{,}7\}$; \textit{min\_samples\_leaf} $\in\{1;5;10;20\}$; \textit{class\_weight} $\in\{\text{ninguno},\text{balanced}\}$ & \textit{n\_estimators}=300; 280 \\
 MLP & capas $\in\{(32,);(64,);(128,);(64,32);(128,64)\}$; $\alpha\in\{10^{-5};10^{-4};10^{-3};10^{-2};10^{-1}\}$; \textit{learning\_rate\_init} $\in\{0{,}001;0{,}01;0{,}03;0{,}1;0{,}3\}$; $\log(1+x)\in\{\text{sí},\text{no}\}$ & adam, \textit{max\_iter}=500, \textit{early\_stopping}, \textit{validation\_fraction}=0{,}15, \textit{n\_iter\_no\_change}=20; 250 \\
-SVM & \textit{kernel} $\in\{\text{lineal},\text{RBF}\}$; $C\in\{0{,}01;0{,}03;0{,}1;1;10;30;100\}$; $\gamma\in\{\text{scale};0{,}001;0{,}01;0{,}03;0{,}1\}$ (RBF); \textit{class\_weight} $\in\{\text{ninguno},\text{balanced}\}$; $\log(1+x)\in\{\text{sí},\text{no}\}$ & 24 lineales + 100 RBF \\
+SVM & \textit{kernel} lineal: $C\in\{0{,}01;0{,}03;0{,}1;1;10;100\}$; RBF:
+$C\in\{0{,}1;1;10;30;100\}$ y $\gamma\in\{\text{scale};0{,}001;0{,}01;0{,}03;0{,}1\}$;
+\textit{class\_weight} $\in\{\text{ninguno},\text{balanced}\}$;
+$\log(1+x)\in\{\text{sí},\text{no}\}$ & 24 lineales + 100 RBF \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
 Los tres mejores candidatos de cada familia quedan separados por menos que la desviación
 entre folds. En Random Forest, el mejor de la validación cruzada usa profundidad 8,
-\textit{max\_features}=0,3 y \textit{min\_samples\_leaf}=5, todos interiores a la malla; la
-configuración elegida en validación usa \textit{max\_features}=0,7 y
-\textit{min\_samples\_leaf}=20. En la MLP, el mejor de la validación cruzada usa
-$\alpha=0{,}01$, interior, y la elegida usa $\alpha=0{,}1$. Las diferencias entre esos
+\textit{max\_features}=0,3 y \textit{min\_samples\_leaf}=5, todos interiores a la malla. La
+configuración que gana la regla de selección usa \textit{max\_features}=0,7 y
+\textit{min\_samples\_leaf}=20, ambos en el extremo de la malla: quedan elegibles porque su
+AP de validación no baja más que el error estándar del mejor. En la MLP, el mejor de la
+validación cruzada usa $\alpha=0{,}01$, interior, y la elegida usa $\alpha=0{,}1$, el extremo
+superior; su AP de validación tampoco cae fuera de ese margen. Las diferencias entre esos
 candidatos son una zona plana: no se amplió la malla otra vez porque sería perseguir
-ruido.
+ruido, y los extremos elegidos se documentan como tales.
 
 \subsection{Métricas e intervalos}
 
@@ -350,13 +361,16 @@ puntuación que una negativa. Puntuaciones constantes producen un AP igual a la 
 de la partición; predecir siempre la clase mayoritaria da 84,4\,\% de exactitud y recall
 positivo nulo.
 
-Los intervalos son del 95\,\%. En validación cruzada se usa la aproximación $t$:
-$\bar{x}\pm t_{0{,}975,\,4}\,s/\sqrt{5}$, con desviación muestral entre folds. En las
-particiones se usa bootstrap estratificado con 2\,000 réplicas. Las comparaciones pareadas
-remuestrean por separado ambas clases, calculan la métrica de los dos modelos sobre la
-misma réplica y registran la diferencia; este diseño condiciona a modelos, predicciones y
-umbrales fijos y no incluye la variabilidad del entrenamiento ni de la selección. Un
-intervalo que incluye cero no demuestra equivalencia.
+Los intervalos son del 95\,\%. En validación cruzada, el curso usa media $\pm$ desviación
+estándar entre folds; aquí se adopta la aproximación $t$,
+$\bar{x}\pm t_{0{,}975,\,4}\,s/\sqrt{5}$, con desviación muestral, porque corrige el sesgo de
+la desviación con cinco folds. En las particiones se usa bootstrap estratificado con 2\,000
+réplicas y se toman los percentiles 2{,}5 y 97{,}5 de la distribución remuestreada
+\cite{efron1979}. Las comparaciones pareadas remuestrean por separado ambas clases,
+calculan la métrica de los dos modelos sobre la misma réplica y registran la diferencia
+\cite{efron1979}; este diseño condiciona a modelos, predicciones y umbrales fijos y no
+incluye la variabilidad del entrenamiento ni de la selección. Un intervalo que incluye cero
+no demuestra equivalencia.
 
 \section{Resultados}
 \label{sec:resultados}
@@ -369,25 +383,23 @@ combinaciones de la malla y las barras son la desviación entre folds.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figuras/fig02_hiperparametros.png}
+\includegraphics[width=0.86\textwidth]{figuras/fig02_hiperparametros.png}
 \caption{AP de validación cruzada frente a los hiperparámetros principales. Cada punto es
 el promedio marginal sobre las demás combinaciones; las barras son la desviación entre
 folds. La línea gris es el AP de entrenamiento. ``sin límite'' corresponde a
-\textit{max\_depth}=None.}
+\textit{max\_depth}=None. Los ocho paneles cubren profundidad, hojas mínimas y variables
+por división de Random Forest; $\alpha$ y tasa de aprendizaje de la MLP; $C$ del kernel RBF;
+$k$ de k-NN y $C$ de la regresión logística.}
 \label{fig:hiperparametros}
 \end{figure*}
 
-En Random Forest, la profundidad tiene un efecto pequeño: 0,7292 con 6 niveles, 0,7377
-con 10 y 0,7395 sin límite, con desviaciones entre folds del orden de 0,02. El número de
-variables por división pesa más: 0,7504 con \textit{max\_features}=0,5 frente a 0,7011 con
-log2. En la MLP, $\alpha=0{,}1$ obtiene el mayor AP marginal (0,7081) y la tasa 0,01 el
-mejor promedio (0,7134); tasas de 0,3 caen a 0,6411. El AP marginal de la MLP sigue
-subiendo en $\alpha=0{,}1$, pero el óptimo de la validación cruzada ($\alpha=0{,}01$) es
-interior a la malla. En SVM, $C=1$ y $C=10$ son los mejores
-valores del kernel RBF (0,6733 y 0,6658) y $C=100$ el peor (0,6409). En k-NN, el AP
-marginal crece con $k$ hasta estabilizarse: 0,6512 en $k=61$, 0,6522 en $k=81$ y 0,6508 en
-$k=101$. En regresión logística, $C=0{,}1$ obtiene el mayor AP marginal (0,6629) y las
-diferencias con el resto son pequeñas.
+En Random Forest, la profundidad tiene un efecto pequeño (0,7292 con 6 niveles y 0,7395 sin
+límite, con desviaciones del orden de 0,02) y las variables por división pesan más: 0,7504
+con \textit{max\_features}=0,5 frente a 0,7011 con log2. En la MLP, $\alpha=0{,}1$ obtiene
+el mayor AP marginal (0,7081) y la tasa 0,01 el mejor promedio (0,7134); el óptimo de la
+validación cruzada ($\alpha=0{,}01$) es interior. En SVM, $C=1$ y $C=10$ son los mejores del
+kernel RBF (0,6733 y 0,6658) y $C=100$ el peor (0,6409). En k-NN, el AP se estabiliza en
+torno a 0,65 desde $k=61$, y en regresión logística $C=0{,}1$ obtiene 0,6629.
 
 El AP de entrenamiento confirma el sobreajuste esperado. k-NN alcanza 1,0000 porque con
 \textit{weights}=distance cada punto se encuentra a sí mismo a distancia cero; es un
@@ -457,7 +469,7 @@ positivos.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.86\textwidth]{figuras/fig03_pr_roc_validacion.png}
+\includegraphics[width=0.74\textwidth]{figuras/fig03_pr_roc_validacion.png}
 \caption{Curvas precisión-recall (a) y ROC (b) en validación para las cinco familias.}
 \label{fig:curvas}
 \end{figure*}
@@ -577,14 +589,20 @@ MLP & 0{,}7225 & 0{,}7181 & $+0{,}0044$ \\
 SVM & 0{,}7054 & 0{,}7040 & $+0{,}0014$ \\
 k-NN & 0{,}7018 & 0{,}7066 & $-0{,}0048$ \\
 Regresión logística & 0{,}6841 & 0{,}6845 & $-0{,}0004$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+
+\begin{tabular}{lcc}
+\toprule
+\textbf{Modelo} & \makecell{\textbf{$\Delta$AP CV}\\\textbf{one-hot}} & \makecell{\textbf{$\Delta$AP val.}\\\textbf{one-hot}} \\
 \midrule
-Modelo & \makecell{\textbf{$\Delta$AP CV}\\\textbf{one-hot}} & \makecell{\textbf{$\Delta$AP val.}\\\textbf{one-hot}} & \\
-\midrule
-Random Forest & $-0{,}0017$ & $+0{,}0004$ & \\
-MLP & $-0{,}0010$ & $+0{,}0097$ & \\
-SVM & $+0{,}0027$ & $-0{,}0066$ & \\
-k-NN & $+0{,}0044$ & $+0{,}0046$ & \\
-Regresión logística & $+0{,}0011$ & $-0{,}0006$ & \\
+Random Forest & $-0{,}0017$ & $+0{,}0004$ \\
+MLP & $-0{,}0010$ & $+0{,}0097$ \\
+SVM & $+0{,}0027$ & $-0{,}0066$ \\
+k-NN & $+0{,}0044$ & $+0{,}0046$ \\
+Regresión logística & $+0{,}0011$ & $-0{,}0006$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -599,8 +617,11 @@ entrenamiento y se evalúa en validación; la reducción se encapsula en el
 
 \subsection{Análisis individual de variables}
 
-Para cada variable numérica se calculó la correlación punto-biserial con \textit{Revenue} y
-un AUC univariado; para las categóricas se usó la V de Cramér y un AUC obtenido con una
+Para cada variable numérica se calculó la correlación punto-biserial con \textit{Revenue},
+que es el coeficiente de Pearson entre la variable y la etiqueta binaria, y un AUC
+univariado. Para las categóricas se usó la V de Cramér,
+$V=\sqrt{\chi^2/(n\,\min(r-1,k-1))}$, con $\chi^2$ de la tabla de contingencia, $n$ el
+número de sesiones y $r$ y $k$ el número de filas y columnas, y un AUC obtenido con una
 regresión logística sobre su codificación one-hot, estimado con \textit{cross\_val\_predict}
 y cinco folds dentro de entrenamiento, de modo que ya no es una medida in-sample. En ambos
 casos se añadió la información mutua con la etiqueta. La
@@ -611,44 +632,45 @@ Fig.~\ref{fig:variables} muestra las diez primeras.
 \centering
 \caption{Análisis individual de las 17 variables en entrenamiento. AUC es el área bajo la
 curva ROC univariada (fuera de muestra para las categóricas); las numéricas reportan $r$
-(punto-biserial) y las categóricas $V$ (V de Cramér); IM es la información mutua. La
-recomendación es descriptiva.}
+(punto-biserial) y las categóricas $V$ (V de Cramér); IM es la información mutua. Tipo:
+Num. numérica continua o de conteo, Nom. nominal, Esp. ordinal de cercanía a fecha
+especial y Bin. binaria. La recomendación es descriptiva.}
 \label{tab:variables-individuales}
 \scriptsize
 \renewcommand{\arraystretch}{1.02}
 \setlength{\tabcolsep}{2.2pt}
 \begin{minipage}[t]{0.49\textwidth}
 \centering
-\begin{tabular}{@{}r p{2.45cm} r r r l@{}}
+\begin{tabular}{@{}r p{2.15cm} p{1.05cm} r r r l@{}}
 \toprule
-\textbf{\#} & \textbf{Variable} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Recom.} \\
+\textbf{\#} & \textbf{Variable} & \textbf{Tipo} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Recom.} \\
 \midrule
-1 & \texttt{PageValues} & 0{,}866 & 0{,}489 & 0{,}165 & Mantener \\
-2 & \texttt{ExitRates} & 0{,}710 & $-0{,}210$ & 0{,}043 & Mantener \\
-3 & \texttt{ProductRelated\_}\allowbreak\texttt{Duration} & 0{,}669 & 0{,}142 & 0{,}032 & Mantener \\
-4 & \texttt{ProductRelated} & 0{,}658 & 0{,}156 & 0{,}030 & Mantener \\
-5 & \texttt{Administrative} & 0{,}626 & 0{,}133 & 0{,}016 & Mantener \\
-6 & \texttt{TrafficType} & 0{,}625 & 0{,}177 & 0{,}016 & Mantener \\
-7 & \texttt{Administrative\_}\allowbreak\texttt{Duration} & 0{,}620 & 0{,}076 & 0{,}014 & Mantener \\
-8 & \texttt{Month} & 0{,}616 & 0{,}172 & 0{,}015 & Mantener \\
-9 & \texttt{BounceRates} & 0{,}612 & $-0{,}148$ & 0{,}027 & Mantener \\
+1 & \texttt{PageValues} & Num. & 0{,}866 & 0{,}489 & 0{,}165 & Mantener \\
+2 & \texttt{ExitRates} & Num. & 0{,}710 & $-0{,}210$ & 0{,}043 & Mantener \\
+3 & \texttt{ProductRelated\_}\allowbreak\texttt{Duration} & Num. & 0{,}669 & 0{,}142 & 0{,}032 & Mantener \\
+4 & \texttt{ProductRelated} & Num. & 0{,}658 & 0{,}156 & 0{,}030 & Mantener \\
+5 & \texttt{Administrative} & Num. & 0{,}626 & 0{,}133 & 0{,}016 & Mantener \\
+6 & \texttt{TrafficType} & Nom. & 0{,}625 & 0{,}177 & 0{,}016 & Mantener \\
+7 & \texttt{Administrative\_}\allowbreak\texttt{Duration} & Num. & 0{,}620 & 0{,}076 & 0{,}014 & Mantener \\
+8 & \texttt{Month} & Nom. & 0{,}616 & 0{,}172 & 0{,}015 & Mantener \\
+9 & \texttt{BounceRates} & Num. & 0{,}612 & $-0{,}148$ & 0{,}027 & Mantener \\
 \bottomrule
 \end{tabular}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.49\textwidth}
 \centering
-\begin{tabular}{@{}r p{2.45cm} r r r l@{}}
+\begin{tabular}{@{}r p{2.15cm} p{1.05cm} r r r l@{}}
 \toprule
-\textbf{\#} & \textbf{Variable} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Recom.} \\
+\textbf{\#} & \textbf{Variable} & \textbf{Tipo} & \textbf{AUC} & \textbf{$r$/$V$} & \textbf{IM} & \textbf{Recom.} \\
 \midrule
-10 & \texttt{Informational} & 0{,}558 & 0{,}090 & 0{,}007 & Revisar \\
-11 & \texttt{Informational\_}\allowbreak\texttt{Duration} & 0{,}556 & 0{,}066 & 0{,}005 & Revisar \\
-12 & \texttt{OperatingSystems} & 0{,}544 & 0{,}082 & 0{,}004 & \makecell[l]{Eliminar\\o combinar} \\
-13 & \texttt{SpecialDay} & 0{,}539 & $-0{,}091$ & 0{,}009 & \makecell[l]{Eliminar\\o combinar} \\
-14 & \texttt{VisitorType} & 0{,}538 & 0{,}095 & 0{,}004 & \makecell[l]{Eliminar\\o combinar} \\
-15 & \texttt{Browser} & 0{,}515 & 0{,}066 & 0{,}002 & \makecell[l]{Eliminar\\o combinar} \\
-16 & \texttt{Region} & 0{,}511 & 0{,}036 & 0{,}001 & \makecell[l]{Eliminar\\o combinar} \\
-17 & \texttt{Weekend} & 0{,}504 & 0{,}022 & 0{,}000 & \makecell[l]{Eliminar\\o combinar} \\
+10 & \texttt{Informational} & Num. & 0{,}558 & 0{,}090 & 0{,}007 & Revisar \\
+11 & \texttt{Informational\_}\allowbreak\texttt{Duration} & Num. & 0{,}556 & 0{,}066 & 0{,}005 & Revisar \\
+12 & \texttt{OperatingSystems} & Nom. & 0{,}544 & 0{,}082 & 0{,}004 & \makecell[l]{Eliminar\\o combinar} \\
+13 & \texttt{SpecialDay} & Esp. & 0{,}539 & $-0{,}091$ & 0{,}009 & \makecell[l]{Eliminar\\o combinar} \\
+14 & \texttt{VisitorType} & Nom. & 0{,}538 & 0{,}095 & 0{,}004 & \makecell[l]{Eliminar\\o combinar} \\
+15 & \texttt{Browser} & Nom. & 0{,}515 & 0{,}066 & 0{,}002 & \makecell[l]{Eliminar\\o combinar} \\
+16 & \texttt{Region} & Nom. & 0{,}511 & 0{,}036 & 0{,}001 & \makecell[l]{Eliminar\\o combinar} \\
+17 & \texttt{Weekend} & Bin. & 0{,}504 & 0{,}022 & 0{,}000 & \makecell[l]{Eliminar\\o combinar} \\
 \bottomrule
 \end{tabular}
 \end{minipage}
@@ -656,37 +678,40 @@ recomendación es descriptiva.}
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.82\textwidth]{figuras/fig04_variables_auc.png}
+\includegraphics[width=0.70\textwidth]{figuras/fig04_variables_auc.png}
 \caption{Diez variables con mayor AUC univariado en entrenamiento; se anota la
 información mutua y el color indica la recomendación descriptiva.}
 \label{fig:variables}
 \end{figure*}
 
 \textit{PageValues} lidera con claridad (AUC 0{,}866; IM 0{,}165), lo que coincide con la
-ablación de la Sección~\ref{sec:pagevalues}. Le siguen \textit{ExitRates} (0{,}710), con
-dirección negativa, y las variables de producto (0{,}669 y 0{,}658). Nueve variables
-superan 0{,}60 y cinco no superan 0{,}55; estas últimas son candidatas a revisión o
-eliminación. \textit{Weekend} es indistinguible de una asignación aleatoria (0{,}504).
+ablación de la Sección~\ref{sec:pagevalues}. Le siguen \textit{ExitRates} (0{,}710, dirección
+negativa) y las variables de producto (0{,}669 y 0{,}658). Diez variables superan 0{,}60 y
+seis no superan 0{,}55; estas últimas son las candidatas a eliminación. El índice de Fisher
+ordena igual: 0{,}478 y 0{,}275 para las dos primeras, frente a menos de 0,05 en
+\textit{SpecialDay} e \textit{Administrative\_}\allowbreak\texttt{Duration}.
+\textit{Weekend} es indistinguible de una asignación aleatoria (0{,}504).
 
 \subsection{Redundancia y eliminación de variables}
 
 El análisis de redundancia encontró dos pares con $|r|>0{,}8$: \textit{ProductRelated} y
 \textit{ProductRelated\_Duration} (0{,}843), y \textit{BounceRates} y \textit{ExitRates}
 (0{,}899). Para medir el efecto de eliminar variables se entrenó Random Forest y la MLP
-con sus configuraciones elegidas en tres variantes: completo, sin las cinco candidatas
-fijadas antes del análisis (\textit{Weekend}, \textit{Region}, \textit{Browser},
-\textit{VisitorType} y \textit{SpecialDay}) y sin una variable de cada par redundante
+con sus configuraciones elegidas en tres variantes: completo, sin las seis candidatas que
+el propio análisis marca con AUC menor que 0,55 (\textit{Weekend}, \textit{Region},
+\textit{Browser}, \textit{VisitorType}, \textit{SpecialDay} y \textit{OperatingSystems})
+y sin una variable de cada par redundante
 (\textit{ProductRelated\_Duration} y \textit{BounceRates}). La decisión se tomó dentro de
 entrenamiento con validación cruzada, de modo que no hay fuga: la etiqueta no se usa para
 elegir variables fuera del conjunto de ajuste.
 
-Quitar las cinco candidatas no deteriora el AP. En validación, Random Forest pasa de
-0{,}7414 a 0{,}7422 y la MLP de 0{,}7225 a 0{,}7254; en validación cruzada, la variación
-es de $-0{,}0008$ y $-0{,}0019$, respectivamente, dentro de la desviación entre folds. En
-cambio, quitar las dos redundantes cuesta $-0{,}0066$ en Random Forest y $+0{,}0026$ en la
-MLP en validación, y $-0{,}0088$ y $-0{,}0017$ en validación cruzada. La conclusión es que
-las cinco variables de menor AUC pueden retirarse para simplificar el modelo, mientras que
-las redundantes contienen señal que no conviene descartar.
+Quitar las seis candidatas no deteriora el AP. En validación, Random Forest pasa de
+0{,}7414 a 0{,}7422 y la MLP de 0{,}7225 a 0{,}7414; en validación cruzada, la variación
+es de $-0{,}0007$ y $+0{,}0038$, respectivamente, dentro de la desviación entre folds. En
+cambio, quitar las dos redundantes cuesta $-0{,}0066$ en Random Forest y $+0{,}0025$ en la
+MLP en validación, y $-0{,}0088$ y $-0{,}0016$ en validación cruzada. La conclusión es que
+las seis variables con AUC menor que 0,55 pueden retirarse para simplificar el modelo,
+mientras que las redundantes contienen señal que no conviene descartar.
 
 \subsection{Componentes principales y UMAP}
 
@@ -694,45 +719,79 @@ PCA y UMAP se ajustaron dentro del \texttt{Pipeline}, después del preprocesamie
 con entrenamiento. El protocolo se fijó antes de consultar prueba. Para PCA se evaluaron
 $n\in\{5,10,15,20,28,35,45\}$ y el corte que retiene el 95\,\% de la varianza. Para UMAP se
 evaluaron las quince combinaciones de $n\in\{2,5,10,15,20\}$ y vecinos
-$\in\{15,30,50\}$. Todas las variantes pasan por validación cruzada y por validación. La
-selección usa la regla 1-SE: se parte del mayor AP de validación y se prefiere la variante
-más simple cuando su AP no cae más que el error estándar entre folds del ganador, es decir,
-$\text{std}_{CV}/\sqrt{5}$. La complejidad se mide solo por la dimensión; entre las
+$\in\{15,30,50\}$. UMAP construye un grafo de vecinos en el espacio preprocesado y lo
+proyecta a menor dimensión preservando la estructura local \cite{ref_umap}; $n$ fija la
+dimensión de salida, \textit{n\_neighbors} el tamaño del vecindario y \textit{min\_dist}
+la separación mínima entre puntos, que se dejó en 0,1. Todas las variantes pasan por validación cruzada y por validación. La
+selección usa la regla 1-SE \cite{ref_esl}: se parte del mayor AP de validación y se
+prefiere la variante más simple cuando su AP no cae más que el error estándar entre folds
+del ganador, es decir, $\text{std}_{CV}/\sqrt{5}$. La regla importa aquí porque el corte
+del 95\,\% de varianza exige 28 componentes, más que las 17 variables originales, y sin
+ella se elegiría una representación más compleja que los datos de partida. La complejidad se mide solo por la dimensión; entre las
 candidatas elegibles de menor dimensión gana la de mayor AP de validación. La prueba se
 consulta solo después de fijar las variantes, y se reportan la base, PCA, UMAP y una
 proyección UMAP de dos dimensiones por familia. El experimento se ejecutó en Random Forest y
 la MLP, las dos familias con mayor AP de validación.
 
 PCA necesitó 28 componentes para retener el 95\,\% de la varianza en ambas familias, cerca
-de un tercio de las 73 columnas que produce el preprocesador. El mejor AP de validación con
-PCA fue 0{,}7184 para Random Forest (45 componentes) y 0{,}7343 para la MLP (35). La regla
-1-SE eligió diez componentes para Random Forest (AP 0{,}7074) y quince para la MLP
-(0{,}7219), ambos por encima del umbral de máxima AP menos el error estándar. En UMAP, el
-máximo de validación fue 0{,}6959 para Random Forest (15 dimensiones, 50 vecinos) y
-0{,}6531 para la MLP (15 dimensiones, 50 vecinos); la regla eligió 15 dimensiones con 50
-vecinos (0{,}6959) y 5 dimensiones con 30 vecinos (0{,}6484), respectivamente. La
-representación completa ya era la mejor en validación para ambas familias (0{,}7414 y
-0{,}7225), de modo que ninguna variante reducida la superó antes de consultar prueba.
+de un tercio de las 73 columnas del preprocesador. La regla 1-SE eligió diez componentes para
+Random Forest y quince para la MLP; en UMAP, 15 dimensiones con 50 vecinos y 5 con 30. La
+Tabla~\ref{tab:reduccion} reúne las variantes elegidas, el porcentaje de reducción y las
+métricas de prueba. La representación completa ya era la mejor en validación en ambas
+familias (0{,}7414 y 0{,}7225), de modo que ninguna variante reducida la superó antes de
+consultar prueba.
 
-En prueba, la reducción no mejora el AP. Random Forest cae de 0{,}7496 a 0{,}7236 con PCA
-($-0{,}0260$, IC $[-0{,}0438;-0{,}0090]$), a 0{,}6879 con UMAP ($-0{,}0616$, IC
-$[-0{,}0893;-0{,}0353]$) y a 0{,}6595 con UMAP de dos dimensiones ($-0{,}0900$). La MLP
-cae menos con PCA, de 0{,}7494 a 0{,}7408 ($-0{,}0086$, IC $[-0{,}0219;0{,}0050]$), pero
-pierde 0{,}1113 con UMAP (AP 0{,}6381) y 0{,}1679 con UMAP de dos dimensiones. El ROC-AUC
-acompaña al AP: la caída es $-0{,}0167$ para Random Forest con PCA (IC $[-0{,}0246;-0{,}0093]$) y
-$-0{,}0029$ para la MLP con PCA (IC $[-0{,}0084;0{,}0030]$). Diez de los doce intervalos
-pareados excluyen cero; los dos restantes, los de la MLP con PCA, no permiten descartar una
-pérdida nula.
+En prueba, la reducción no mejora el AP. Diez de los doce intervalos pareados contra la base
+excluyen cero; los dos restantes son los de la MLP con PCA ($\Delta$AP $-0{,}0086$, IC
+$[-0{,}0219;0{,}0050]$; $\Delta$ROC-AUC $-0{,}0029$, IC $[-0{,}0084;0{,}0030]$), de modo que
+en esa familia la pérdida no se distingue de cero. En Random Forest, PCA cuesta 0{,}0260 de
+AP y UMAP más del doble; UMAP de dos dimensiones es la peor variante en ambas familias.
 
-La señal útil está dispersa en las variables originales y las transformaciones no
-supervisadas no la concentran. La MLP tolera mejor PCA porque su capa oculta ya impone una
-compresión, y en su caso la pérdida no es detectable; en Random Forest, en cambio, PCA y
-UMAP cuestan AP de forma clara. Reducir dimensiones no simplifica sin costo: la base se
-mantiene para el modelo final y PCA y UMAP quedan como análisis de sensibilidad.
+Las Figs.~\ref{fig:reduccion} y \ref{fig:umap} resumen el barrido y la proyección: la
+primera traza la varianza acumulada de PCA, el AP de validación frente a los componentes y
+frente a la dimensión de UMAP, con la variante elegida marcada; la segunda proyecta las
+sesiones de prueba en dos dimensiones. La señal útil está dispersa en las variables
+originales y las transformaciones no supervisadas no la concentran. La MLP tolera mejor PCA
+porque su capa oculta ya impone una compresión, y en su caso la pérdida no es detectable; en
+Random Forest, en cambio, PCA y UMAP cuestan AP de forma clara. Reducir dimensiones no
+simplifica sin costo: la base se mantiene para el modelo final y PCA y UMAP quedan como
+análisis de sensibilidad.
+
+\begin{table*}[!t]
+\centering
+\caption{Reducción de dimensión en prueba. La base son las 73 columnas que produce el
+preprocesador; el porcentaje de reducción es $1-k/73$ con $k$ componentes o dimensiones.
+$\Delta$AP es la diferencia pareada frente a la base de la familia, con IC bootstrap del
+95\,\%.}
+\label{tab:reduccion}
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lcccccccc}
+\toprule
+\textbf{Familia} & \textbf{Variante} & \textbf{Comp.} & \textbf{Red.} &
+\textbf{AP val.} & \textbf{AP prueba [IC]} & \textbf{ROC-AUC} & \textbf{F1} &
+\textbf{$\Delta$AP [IC]} \\
+\midrule
+Random Forest & Base & 73 & 0,0\,\% & 0{,}7414 & \makecell{0{,}7496\\{[0{,}7134;0{,}7869]}} & 0{,}9302 & 0{,}6608 & --- \\
+ & PCA & 10 & 86,3\,\% & 0{,}7074 & \makecell{0{,}7236\\{[0{,}6831;0{,}7626]}} & 0{,}9134 & 0{,}6145 & $-0{,}0260$ $[-0{,}0438;-0{,}0090]$ \\
+ & UMAP & 15 & 79,5\,\% & 0{,}6959 & \makecell{0{,}6879\\{[0{,}6478;0{,}7292]}} & 0{,}8936 & 0{,}5927 & $-0{,}0616$ $[-0{,}0893;-0{,}0353]$ \\
+\midrule
+MLP & Base & 73 & 0,0\,\% & 0{,}7225 & \makecell{0{,}7494\\{[0{,}7127;0{,}7873]}} & 0{,}9284 & 0{,}6446 & --- \\
+ & PCA & 15 & 79,5\,\% & 0{,}7219 & \makecell{0{,}7408\\{[0{,}7027;0{,}7803]}} & 0{,}9255 & 0{,}6424 & $-0{,}0086$ $[-0{,}0219;0{,}0050]$ \\
+ & UMAP & 5 & 93,2\,\% & 0{,}6484 & \makecell{0{,}6381\\{[0{,}5960;0{,}6830]}} & 0{,}8620 & 0{,}5131 & $-0{,}1113$ $[-0{,}1406;-0{,}0815]$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+\parbox{\textwidth}{\scriptsize UMAP-2D (2 componentes,
+97,3\,\% de reducción): Random Forest AP 0{,}6595 [0{,}6190;0{,}7019], ROC-AUC 0{,}8883,
+F1 0{,}5488, $\Delta$AP $-0{,}0900$ $[-0{,}1181;-0{,}0617]$; MLP AP 0{,}5815 [0{,}5366;0{,}6370],
+ROC-AUC 0{,}8522, F1 0{,}5549, $\Delta$AP $-0{,}1679$ $[-0{,}2042;-0{,}1237]$.}
+\end{table*}
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.86\textwidth]{figuras/fig05_reduccion.png}
+\includegraphics[width=0.72\textwidth]{figuras/fig05_reduccion.png}
 \caption{Reducción de dimensión. (a) Varianza acumulada de PCA; la línea vertical marca los
 28 componentes que retienen el 95\,\% y las curvas de ambas familias coinciden. (b) AP de
 validación frente al número de componentes de PCA. (c) AP de validación frente a la
@@ -743,7 +802,7 @@ elegida por la regla 1-SE.}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.82\columnwidth]{figuras/fig06_umap_2d.png}
+\includegraphics[width=0.9\columnwidth]{figuras/fig06_umap_2d.png}
 \caption{Proyección UMAP en dos dimensiones del conjunto de prueba. Cada punto es una
 sesión; el color indica si terminó en compra.}
 \label{fig:umap}
@@ -779,23 +838,24 @@ sistema en tiempo real tendría que operar sin \textit{PageValues} y asumir la p
 documentada en la Tabla~\ref{tab:pagevalues}.
 
 ¿Es posible reducir la complejidad del modelo final? Sí, en dos sentidos. En variables,
-quitar las cinco candidatas no deteriora el AP y simplifica el modelo; no conviene, en
+quitar las seis candidatas no deteriora el AP y simplifica el modelo; no conviene, en
 cambio, quitar las redundantes. En dimensión, PCA conserva buena parte de la señal: con 10
 componentes en Random Forest el AP de prueba cae 0{,}0260 y con 15 en la MLP la caída no se
 distingue de cero. UMAP, en cambio, degrada el desempeño de forma marcada en ambas familias;
 para este problema sirve para visualizar, no para modelar. Un modelo final razonable es
-Random Forest con las cinco candidatas retiradas, sin reducción de dimensión, y un umbral
+Random Forest con las seis candidatas retiradas, sin reducción de dimensión, y un umbral
 elegido según el costo relativo de los errores.
 
 El trabajo tiene limitaciones. Usa una sola base de datos y una sola semilla, con
-particiones estratificadas pero no temporales; faltan enero y abril y no se cuantificó el
-sesgo estacional ni la deriva entre periodos. La partición de prueba se consultó en un
-análisis anterior y no constituye una evaluación independiente: sus métricas deben leerse
-como descriptivas, aunque no participaron en las decisiones de esta versión. Los intervalos
+particiones estratificadas pero no temporales; faltan enero y abril y el AP de validación
+por mes varía entre 0,57 y 0,88, con estimaciones ruidosas en los meses de menos de 100
+sesiones, de modo que no se evaluó la deriva entre periodos. La prueba no participó en
+ninguna decisión de esta versión, pero sus métricas se conocían de una primera versión del
+trabajo: se leen como descriptivas y no como una evaluación independiente. Los intervalos
 bootstrap son condicionales a modelos y predicciones fijos y no incluyen la variabilidad
-del entrenamiento. No se estandarizaron todas las columnas antes de PCA/UMAP ni se
-calibraron probabilidades; el umbral se eligió por F1 y no por un análisis formal de
-costo-beneficio. La clase positiva tiene 1\,908 casos, lo que limita la precisión de los
+del entrenamiento. Las numéricas se estandarizaron y las indicadoras 0/1 quedaron sin
+escalar antes de PCA y UMAP; no se calibraron probabilidades y el umbral se eligió por F1
+y no por un análisis formal de costo-beneficio. La clase positiva tiene 1\,908 casos, lo que limita la precisión de los
 intervalos, y UMAP añade variabilidad por su inicialización. Como trabajo futuro se
 propone validación temporal, calibración, umbrales sensibles al costo y repetición con
 otras semillas.
@@ -805,6 +865,8 @@ incertidumbre y distingue ranking de decisión. Random Forest y la MLP son los f
 sin diferencia detectada en prueba; \textit{PageValues} explica la mayor parte del
 desempeño, el umbral ajustado mejora el recall a cambio de precisión, y el modelo puede
 simplificarse retirando las variables de menor AUC.
+
+\FloatBarrier
 
 \begin{thebibliography}{5}
 
@@ -835,6 +897,19 @@ doi: 10.1007/s44163-023-00086-0.
 J.~Lin, ``Application of machine learning in predicting consumer behavior and
 precision marketing,'' \textit{PLOS ONE}, vol.~20, no.~5, Art.~no.~e0321854, 2025.
 doi: 10.1371/journal.pone.0321854.
+
+\bibitem{ref_umap}
+L.~McInnes, J.~Healy, and J.~Melville, ``UMAP: Uniform Manifold Approximation and
+Projection for Dimension Reduction,'' \textit{arXiv preprint} arXiv:1802.03426, 2018.
+doi: 10.48550/arXiv.1802.03426.
+
+\bibitem{ref_efron}
+B.~Efron and R.~J. Tibshirani, \textit{An Introduction to the Bootstrap}. New York, NY,
+USA: Chapman \& Hall/CRC, 1993.
+
+\bibitem{ref_esl}
+T.~Hastie, R.~Tibshirani, and J.~Friedman, \textit{The Elements of Statistical Learning},
+2nd ed. New York, NY, USA: Springer, 2009.
 
 \end{thebibliography}
 
