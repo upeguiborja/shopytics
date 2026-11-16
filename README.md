@@ -119,13 +119,16 @@ las versiones de las librerías, los tamaños de las particiones y la duración 
 ### Reanudar desde una etapa
 
 `--desde` ejecuta desde la etapa indicada hasta `figuras` y reutiliza los artefactos de las
-etapas anteriores. Los valores admitidos son `datos`, `busqueda`, `evaluacion`,
-`sensibilidad`, `specialday`, `variables`, `reduccion` y `figuras`.
+etapas anteriores. `--hasta` acota el recorrido y acepta las mismas etapas, de modo que
+`--desde datos --hasta datos` ejecuta solo la auditoría y `--desde figuras` regenera solo
+las figuras. Los valores admitidos son `datos`, `busqueda`, `evaluacion`, `sensibilidad`,
+`specialday`, `variables`, `reduccion` y `figuras`.
 
 ```bash
 python src/ejecutar_todo.py --desde evaluacion
 python src/ejecutar_todo.py --desde reduccion
 python src/ejecutar_todo.py --desde figuras
+python src/ejecutar_todo.py --desde datos --hasta datos
 ```
 
 Antes de usar `--desde`, compruebe que los archivos de las etapas previas existan en la
@@ -162,7 +165,7 @@ python -m pytest -q
 
 Las pruebas de integridad comprueban dimensiones, particiones, ausencia de fuga, mallas,
 preprocesador y contratos de las etapas. Las que dependen de `resultados/manifiesto.json`
-se omiten mientras no exista una ejecución completa.
+se omiten si no existe una ejecución completa.
 
 ## Notebook
 
@@ -227,10 +230,14 @@ Fuente: `resultados/evaluacion_familias/metricas.csv`.
   `resumen.json` y `comparacion_pagevalues.csv`.
 - La ablación de `SpecialDay` es marginal: el AP de validación pasa de 0,7414 a 0,7418
   (Δ = −0,0004). Fuente: `specialday_ablacion.csv`.
-- Reducción de dimensión en los CSV actuales: PCA con 28 componentes deja AP de prueba
-  0,7404 (Random Forest) y 0,7326 (MLP); UMAP con 10 componentes deja 0,6830 y 0,6224,
-  respectivamente. Fuente: `reduccion/reduccion_test.csv`. La corrida completa de
-  `reduccion` regenera estos archivos con la rejilla vigente del protocolo.
+- Reducción de dimensión, con la rejilla completa del protocolo: la base queda en AP de
+  prueba 0,7496 (Random Forest) y 0,7494 (MLP). La regla de simplicidad eligió PCA con 5
+  componentes para Random Forest (AP 0,6897) y 10 para la MLP (0,7284), y UMAP con 5
+  dimensiones y 30 vecinos (0,6663) y con 2 dimensiones y 50 vecinos (0,6349),
+  respectivamente; la referencia UMAP de dos dimensiones dio 0,6595 y 0,5815. Las ocho
+  diferencias pareadas contra la base excluyen cero, de modo que reducir dimensiones no
+  mejora el resultado en este problema. Fuentes: `reduccion/reduccion_test.csv` y
+  `reduccion/reduccion_comparacion.csv`.
 
 ### Limitaciones de la evaluación
 
