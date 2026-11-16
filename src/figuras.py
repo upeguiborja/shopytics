@@ -118,13 +118,19 @@ def _formateador_porcentaje(decimales: int = 0):
     return formatear
 
 
+_ORDEN_ETIQUETAS = {"log2": 0, "sqrt": 1}
+
+
 def _orden_valor(valor):
-    if isinstance(valor, str) and valor.strip().lower() in {"sin límite", "sin limite", "none"}:
-        return (1, float("inf"))
+    texto = str(valor).strip().lower()
+    if texto in _ORDEN_ETIQUETAS:
+        return (0, _ORDEN_ETIQUETAS[texto])
+    if texto in {"sin límite", "sin limite", "none"}:
+        return (2, float("inf"))
     try:
-        return (0, float(valor))
+        return (1, float(valor))
     except (TypeError, ValueError):
-        return (2, str(valor))
+        return (3, texto)
 
 
 def _etiqueta_valor(valor) -> str:
