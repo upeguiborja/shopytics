@@ -15,4 +15,4 @@ SpecialDay,numérica,correlación punto-biserial,-0.09067583669856878,7.59039832
 VisitorType,categórica,V de Cramér,0.09536734306756933,,0.5374682102007263,positiva,0.004115755403406168,,14,eliminar o combinar
 Browser,categórica,V de Cramér,0.06546064548293266,,0.5152967778325966,positiva,0.0022318115132468346,,15,eliminar o combinar
 Region,categórica,V de Cramér,0.035453601705780435,,0.5105155496118782,positiva,0.000633263837058716,,16,eliminar o combinar
-Weekend,categórica,V de Cramér,0.02196841491727622,,0.503756674267474,positiva,0.00024688172493014804,,17,eliminar o combinar
+Weekend,binaria,V de Cramér,0.02196841491727622,,0.503756674267474,positiva,0.00024688172493014804,,17,eliminar o combinar

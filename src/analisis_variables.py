@@ -163,7 +163,7 @@ def analizar_variables(X_tr, y_tr, n_splits=N_FOLDS, semilla=SEMILLA):
         filas.append(
             {
                 "variable": var,
-                "tipo": "categórica",
+                "tipo": "binaria" if var in BINARIAS else "categórica",
                 "metrica": "V de Cramér",
                 "valor": float(v),
                 "p_valor": np.nan,
