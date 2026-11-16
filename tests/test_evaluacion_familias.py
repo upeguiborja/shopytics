@@ -150,7 +150,7 @@ def test_evaluacion_sin_fuga_y_salida_configurable(tmp_path, monkeypatch):
     assert len(resultado["comparaciones_test"]) == 20
     assert len(ajustes) == 7
     assert len(llamadas_cv) == 1
-    assert llamadas_cv[0][0] == nombres
+    assert llamadas_cv[0][0] == list(evaluacion.cargar_configuraciones(ruta))
     assert llamadas_cv[0][1]["semilla"] == evaluacion.SEMILLA
     assert all(params == {"parametro": 3} for _, params, _ in ajustes)
     assert ajustes[-2][2] == {"incluir_pagevalues": False}

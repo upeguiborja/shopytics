@@ -47,9 +47,11 @@ def _resultados_sinteticos(tmp_path: Path) -> Path:
         _fila_cv("kNN", [0.65] * 5, [0.75] * 5,
                  **{"param_clf__n_neighbors": 15}),
         _fila_cv("RandomForest", base, [0.95] * 5,
-                 **{"param_clf__max_depth": 4, "param_clf__min_samples_leaf": 1}),
+                 **{"param_clf__max_depth": 4, "param_clf__min_samples_leaf": 1,
+                    "param_clf__max_features": "sqrt"}),
         _fila_cv("RandomForest", [0.65] * 5, [0.99] * 5,
-                 **{"param_clf__max_depth": np.nan, "param_clf__min_samples_leaf": 5}),
+                 **{"param_clf__max_depth": np.nan, "param_clf__min_samples_leaf": 5,
+                    "param_clf__max_features": 0.5}),
         _fila_cv("MLP", base, [0.9] * 5,
                  **{"param_clf__alpha": 1e-5, "param_clf__learning_rate_init": 0.001}),
         _fila_cv("MLP", [0.66] * 5, [0.9] * 5,
@@ -268,7 +270,7 @@ def test_generar_figuras_escribe_seis_de_informe_y_seis_de_notebook(tmp_path):
         assert ruta.is_file()
         assert ruta.stat().st_size > 1000
     assert (informe / "fig01_clases_cobertura.png").is_file()
-    assert (resultados / "figuras" / "fig13_comparacion_reduccion.png").is_file()
+    assert (resultados / "figuras" / "nb06_comparacion_reduccion.png").is_file()
 
 
 def test_faltan_resultados_produce_error_explicito(tmp_path):

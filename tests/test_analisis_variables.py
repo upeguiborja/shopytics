@@ -99,6 +99,22 @@ def test_analisis_genera_tabla_de_las_17_variables():
         assert fila.recomendacion == esperado
     assert tabla["p_valor"].isna().sum() == len(NOMINALES + BINARIAS)
 
+    numericas = tabla[tabla["tipo"] == "numérica"]["indice_fisher"]
+    categoricas = tabla[tabla["tipo"] == "categórica"]["indice_fisher"]
+    assert numericas.notna().all()
+    assert (numericas >= 0).all()
+    assert categoricas.isna().all()
+
+
+def test_indice_fisher_crece_con_la_separacion_de_clases():
+    rng = np.random.RandomState(7)
+    y = np.array([0] * 50 + [1] * 50)
+    separadas = np.concatenate([rng.normal(0, 0.1, 50), rng.normal(3, 0.1, 50)])
+    mezcladas = np.concatenate([rng.normal(0, 0.1, 50), rng.normal(0.01, 0.1, 50)])
+    assert av.indice_fisher(separadas, y) > av.indice_fisher(mezcladas, y)
+    assert np.isnan(av.indice_fisher(np.ones(100), y))
+    assert np.isnan(av.indice_fisher(separadas, np.zeros(100, dtype=int)))
+
 
 def test_auc_categorica_usa_cross_val_predict_estratificado(monkeypatch):
     proba = np.array([0.2, 0.8] * 50)
@@ -159,19 +175,15 @@ def test_redundancia_numericas_detecta_el_par_conocido():
     assert fila["correlacion"] == pytest.approx(1.0)
 
 
-def test_candidatas_eliminacion_orden_y_empates():
-    tabla = _tabla_analisis(
-        [f"v{i:02d}" for i in range(17)], np.linspace(0.9, 0.5, 17)
-    )
-    assert av.candidatas_eliminacion(tabla, 5) == ["v16", "v15", "v14", "v13", "v12"]
+def test_candidatas_eliminacion_por_umbral_de_auc():
+    tabla = _tabla_analisis(["a", "b", "c", "d"], [0.50, 0.54, 0.55, 0.70])
+    assert av.candidatas_eliminacion(tabla) == ["a", "b"]
 
     empate = _tabla_analisis(["b", "a", "c"], [0.5, 0.5, 0.7])
-    assert av.candidatas_eliminacion(empate, 2) == ["a", "b"]
+    assert av.candidatas_eliminacion(empate) == ["a", "b"]
 
     with pytest.raises(ValueError):
-        av.candidatas_eliminacion(tabla, 0)
-    with pytest.raises(ValueError):
-        av.candidatas_eliminacion(tabla, len(tabla))
+        av.candidatas_eliminacion(pd.DataFrame({"variable": ["a"]}))
 
 
 def test_cargar_configuraciones_elige_la_mejor_fila_de_rf_y_mlp(tmp_path):
@@ -212,13 +224,13 @@ def test_cargar_configuraciones_rechaza_parametros_invalidos(tmp_path):
 
 def test_ejecutar_eliminacion_pasa_excluir_y_escribe_tablas(tmp_path, monkeypatch):
     rng = np.random.RandomState(42)
-    columnas = NUMERICAS + list(av.CANDIDATAS)
+    columnas = NUMERICAS + ["Weekend", "Region", "Browser", "VisitorType", "SpecialDay"]
     X = pd.DataFrame(rng.normal(size=(200, len(columnas))), columns=columnas)
     y = pd.Series([0, 1] * 100)
     tabla = _tabla_analisis(
         NUMERICAS, [0.51, 0.52, 0.53, 0.54, 0.55, 0.90, 0.80, 0.70, 0.60]
     )
-    candidatas = list(av.CANDIDATAS)
+    candidatas = list(NUMERICAS[:4])
     llamadas = []
 
     def constructor(excluir=None):
@@ -249,7 +261,6 @@ def test_ejecutar_eliminacion_pasa_excluir_y_escribe_tablas(tmp_path, monkeypatc
         tabla,
         ruta,
         tmp_path,
-        n_candidatas=5,
         n_splits=5,
         semilla=42,
     )
@@ -259,7 +270,7 @@ def test_ejecutar_eliminacion_pasa_excluir_y_escribe_tablas(tmp_path, monkeypatc
 
     cv = pd.read_csv(tmp_path / "eliminacion_cv.csv")
     assert len(cv) == 6
-    assert set(cv["variante"]) == {"completo", "sin_5_candidatas", "sin_redundantes"}
+    assert set(cv["variante"]) == {"completo", "sin_candidatas", "sin_redundantes"}
     assert cv["AP_CV"].between(0.0, 1.0).all()
     assert cv["AP_folds"].map(lambda s: len(json.loads(s))).eq(5).all()
 
@@ -293,10 +304,8 @@ def test_eliminacion_rechaza_variable_ausente(tmp_path, monkeypatch):
     _csv_configuraciones(ruta)
     monkeypatch.setattr(av, "construir_modelos", lambda excluir=None: ({}, {}))
 
-    with pytest.raises(ValueError, match="Browser"):
-        av.ejecutar_eliminacion(
-            X, y, X, y, tabla, ruta, tmp_path, n_candidatas=5
-        )
+    with pytest.raises(ValueError, match="NoExiste"):
+        av.ejecutar_eliminacion(X, y, X, y, tabla, ruta, tmp_path)
 
 
 def test_ejecutar_analisis_usa_solo_entrenamiento(tmp_path, monkeypatch):
@@ -365,7 +374,6 @@ def test_ejecutar_analisis_delega_eliminacion_con_validacion(tmp_path, monkeypat
         y_va,
         ruta,
         salida,
-        n_candidatas=3,
         ejecutar_eliminacion_experimento=True,
     )
 
@@ -374,7 +382,7 @@ def test_ejecutar_analisis_delega_eliminacion_con_validacion(tmp_path, monkeypat
     assert len(X_recibida_va) == len(X_va)
     assert capturado["args"][5] == ruta
     assert capturado["args"][6] == salida
-    assert capturado["kwargs"]["n_candidatas"] == 3
+    assert "n_candidatas" not in capturado["kwargs"]
 
 
 def test_ejecutar_analisis_sin_eliminacion_genera_las_dos_tablas(tmp_path):
@@ -399,7 +407,7 @@ def test_ejecutar_analisis_sin_eliminacion_genera_las_dos_tablas(tmp_path):
 
 def test_ejecutar_analisis_rapido_usa_dos_folds_y_submuestra(tmp_path, monkeypatch):
     rng = np.random.RandomState(42)
-    columnas = NUMERICAS + list(av.CANDIDATAS)
+    columnas = NUMERICAS + ["Weekend", "Region", "Browser", "VisitorType", "SpecialDay"]
     X = pd.DataFrame(rng.normal(size=(800, len(columnas))), columns=columnas)
     y = pd.Series([0, 1] * 400)
     X_tr, y_tr = X.iloc[:700], y.iloc[:700]

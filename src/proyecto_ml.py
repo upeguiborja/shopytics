@@ -7,6 +7,7 @@ entrenamiento mediante Pipeline/ColumnTransformer.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import platform
@@ -35,11 +36,11 @@ from sklearn.metrics import (
     roc_curve,
     precision_recall_curve,
 )
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler, OrdinalEncoder
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 from sklearn.svm import SVC
 
 SEMILLA = 42
@@ -72,7 +73,6 @@ PREDICTORAS = NUMERICAS + NOMINALES + BINARIAS + ESPECIALES
 OBJETIVO = "Revenue"
 
 DIR_RES = RAIZ / "resultados"
-DIR_FIG = DIR_RES / "figuras"
 
 
 # ---------------------------------------------------------------------------
@@ -341,6 +341,33 @@ def construir_preprocesador(
     return ColumnTransformer(transformadores, remainder="drop")
 
 
+def orden_familias() -> tuple[str, ...]:
+    """Orden estable de las cinco familias, de la basica a la flexible."""
+    return ("Regresion_logistica", "kNN", "RandomForest", "MLP", "SVM")
+
+
+def leer_configuraciones(ruta) -> dict[str, dict]:
+    """Lee un CSV con una configuracion por familia (columnas modelo y params).
+
+    No fija el conjunto de familias: cada etapa decide cuales exige.
+    """
+    tabla = pd.read_csv(ruta)
+    if not {"modelo", "params"}.issubset(tabla.columns):
+        raise ValueError(f"{ruta} debe contener las columnas modelo y params")
+    if tabla["modelo"].isna().any() or tabla["modelo"].duplicated().any():
+        raise ValueError(f"{ruta} debe tener exactamente una configuracion por familia")
+    configuraciones = {}
+    for fila in tabla.itertuples(index=False):
+        try:
+            params = ast.literal_eval(fila.params)
+        except (ValueError, SyntaxError) as exc:
+            raise ValueError(f"Parametros invalidos para {fila.modelo}") from exc
+        if not isinstance(params, dict):
+            raise ValueError(f"Los parametros de {fila.modelo} deben ser un diccionario")
+        configuraciones[fila.modelo] = params
+    return configuraciones
+
+
 def construir_modelos(
     incluir_pagevalues: bool = True,
     incluir_specialday: bool = True,
@@ -538,57 +565,3 @@ def bootstrap_diferencia(y_true, score_a, score_b, metrica, n_boot=2000, semilla
     puntual = metrica(y_true, score_a) - metrica(y_true, score_b)
     inferior, superior = np.quantile(diferencias, [0.025, 0.975])
     return float(puntual), float(diferencias.mean()), float(inferior), float(superior)
-
-
-# ---------------------------------------------------------------------------
-# Entrenamiento
-# ---------------------------------------------------------------------------
-@dataclass
-class ResultadoFamilia:
-    nombre: str
-    mejor_params: dict
-    cv_ap: float
-    cv_std: float
-    modelo: object
-    tiempo: float
-
-
-def entrenar_familia(nombre, modelo, malla, X_tr, y_tr, cv, n_jobs=-1):
-    t0 = time.time()
-    gs = GridSearchCV(
-        modelo,
-        malla,
-        scoring="average_precision",
-        cv=cv,
-        n_jobs=n_jobs,
-        return_train_score=True,
-        refit=True,
-        verbose=0,
-    )
-    gs.fit(X_tr, y_tr)
-    dt = time.time() - t0
-    best_i = gs.best_index_
-    res = ResultadoFamilia(
-        nombre=nombre,
-        mejor_params=gs.best_params_,
-        cv_ap=float(gs.best_score_),
-        cv_std=float(gs.cv_results_["std_test_score"][best_i]),
-        modelo=gs.best_estimator_,
-        tiempo=dt,
-    )
-    cv_df = pd.DataFrame(gs.cv_results_).copy()
-    cv_df["modelo"] = nombre
-    cv_df["mejor"] = cv_df.index == best_i
-    return res, cv_df
-
-
-def evaluar(res: ResultadoFamilia, X, y, particion: str) -> dict:
-    y_pred = predecir(res.modelo, X)
-    y_score = puntuacion(res.modelo, X)
-    d = metricas(y, y_pred, y_score)
-    d.update({"modelo": res.nombre, "particion": particion})
-    return d
-
-
-def matriz_confusion(res: ResultadoFamilia, X, y):
-    return confusion_matrix(y, predecir(res.modelo, X), labels=[0, 1])

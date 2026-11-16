@@ -3,9 +3,8 @@
 Uso:
     python src/figuras.py [--resultados DIR] [--figuras-informe DIR] [--rapido]
 
-Lee exclusivamente la carpeta de resultados del flujo actual. No usa
-resultados_corregidos ni respaldos historicos. En modo rapido escribe las
-figuras del informe bajo <resultados>/figuras_informe para no sobrescribir
+Lee exclusivamente la carpeta de resultados del flujo. En modo rapido escribe
+las figuras del informe bajo <resultados>/figuras_informe para no sobrescribir
 las figuras definitivas del informe.
 """
 
@@ -375,6 +374,8 @@ def figura_hiperparametros(cv: pd.DataFrame, destino: Path, dpi: int = 200) -> P
          "Profundidad máxima", None),
         ("RandomForest", "param_clf__min_samples_leaf", "Random Forest: hojas mínimas",
          "Hojas mínimas", None),
+        ("RandomForest", "param_clf__max_features", "Random Forest: variables por división",
+         "Variables por división", None),
         ("MLP", "param_clf__alpha", "MLP: regularización α", "α", None),
         ("MLP", "param_clf__learning_rate_init", "MLP: tasa de aprendizaje",
          "Tasa de aprendizaje", None),
@@ -405,7 +406,6 @@ def figura_hiperparametros(cv: pd.DataFrame, destino: Path, dpi: int = 200) -> P
         eje.set_xlim(-0.6, len(tabla) - 0.4)
         eje.grid(axis="y", alpha=0.25)
     ejes[0].legend(fontsize=6.5, loc="best")
-    ejes[-1].set_visible(False)
     fig.tight_layout()
     return _guardar(fig, destino, dpi)
 
@@ -999,17 +999,17 @@ def generar_figuras(resultados=DIR_RES, figuras_informe=None, rapido: bool = Fal
         umap_2d, figuras_informe / "fig06_umap_2d.png", dpi))
 
     rutas["notebook"].append(figura_train_validacion(
-        metricas, figuras_notebook / "fig04_train_vs_validacion.png", dpi))
+        metricas, figuras_notebook / "nb01_train_vs_validacion.png", dpi))
     rutas["notebook"].append(figura_matrices_confusion(
-        matrices, figuras_notebook / "fig07_matrices_confusion_test.png", dpi))
+        matrices, figuras_notebook / "nb02_matrices_confusion_test.png", dpi))
     rutas["notebook"].append(figura_ap_intervalos(
-        intervalos, figuras_notebook / "fig08_ap_intervalos.png", dpi))
+        intervalos, figuras_notebook / "nb03_ap_intervalos.png", dpi))
     rutas["notebook"].append(figura_pagevalues(
-        comparacion_pv, figuras_notebook / "fig09_sensibilidad_pagevalues.png", dpi))
+        comparacion_pv, figuras_notebook / "nb04_sensibilidad_pagevalues.png", dpi))
     rutas["notebook"].append(figura_specialday(
-        specialday, figuras_notebook / "fig10_ablacion_specialday.png", dpi))
+        specialday, figuras_notebook / "nb05_ablacion_specialday.png", dpi))
     rutas["notebook"].append(figura_comparacion_reduccion(
-        metricas, reduccion_test, figuras_notebook / "fig13_comparacion_reduccion.png", dpi))
+        metricas, reduccion_test, figuras_notebook / "nb06_comparacion_reduccion.png", dpi))
     return rutas
 
 

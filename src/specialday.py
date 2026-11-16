@@ -25,6 +25,7 @@ from sklearn.metrics import average_precision_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
 from proyecto_ml import (
+    leer_configuraciones,
     CSV,
     RAIZ,
     SEMILLA,
@@ -53,20 +54,9 @@ ORDEN_MESES = (
 
 def cargar_configuraciones(ruta) -> dict[str, dict]:
     """Carga exactamente una configuracion fija por cada una de las familias."""
-    tabla = pd.read_csv(ruta)
-    if not {"modelo", "params"}.issubset(tabla.columns):
-        raise ValueError("El CSV debe contener las columnas modelo y params")
-    if tabla["modelo"].duplicated().any() or set(tabla["modelo"]) != set(FAMILIAS):
+    configuraciones = leer_configuraciones(ruta)
+    if set(configuraciones) != set(FAMILIAS):
         raise ValueError("Se requiere exactamente una configuracion por familia")
-    configuraciones = {}
-    for fila in tabla.itertuples(index=False):
-        try:
-            params = ast.literal_eval(fila.params)
-        except (ValueError, SyntaxError) as exc:
-            raise ValueError(f"Parametros invalidos para {fila.modelo}") from exc
-        if not isinstance(params, dict):
-            raise ValueError(f"Los parametros de {fila.modelo} deben ser un diccionario")
-        configuraciones[fila.modelo] = params
     return {nombre: configuraciones[nombre] for nombre in FAMILIAS}
 
 

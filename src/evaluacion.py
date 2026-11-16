@@ -3,8 +3,9 @@
 Incluye validacion cruzada 5-fold sobre entrenamiento con las mismas
 particiones de la busqueda, intervalos t al 95 % con desviacion muestral y
 comparaciones pareadas de AP y ROC-AUC en prueba. Los intervalos bootstrap son
-condicionales a modelos fijos y la particion de prueba ya se consulto
-historicamente, por lo que no constituye una prueba independiente.
+condicionales a modelos fijos. La prueba no participo en ninguna decision de
+esta version, pero sus metricas se conocian de una primera version del trabajo,
+por lo que se leen como descriptivas.
 """
 
 from __future__ import annotations
@@ -31,7 +32,9 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from proyecto_ml import (  # noqa: E402
+from proyecto_ml import (
+    leer_configuraciones,
+    orden_familias,  # noqa: E402
     CSV,
     RAIZ,
     SEMILLA,
@@ -68,22 +71,10 @@ def metricas_particion(modelo, X, y, particion, nombre):
 
 def cargar_configuraciones(ruta):
     """Carga exactamente una configuracion seleccionada para cada familia."""
-    tabla = pd.read_csv(ruta)
-    modelos, _ = construir_modelos()
-    if not {"modelo", "params"}.issubset(tabla.columns):
-        raise ValueError("El CSV debe contener las columnas modelo y params")
-    if tabla["modelo"].duplicated().any() or set(tabla["modelo"]) != set(modelos):
+    configuraciones = leer_configuraciones(ruta)
+    if set(configuraciones) != set(orden_familias()):
         raise ValueError("Se requiere exactamente una configuracion por cada una de las cinco familias")
-    configuraciones = {}
-    for fila in tabla.itertuples(index=False):
-        try:
-            params = ast.literal_eval(fila.params)
-        except (ValueError, SyntaxError) as exc:
-            raise ValueError(f"Parametros invalidos para {fila.modelo}") from exc
-        if not isinstance(params, dict):
-            raise ValueError(f"Los parametros de {fila.modelo} deben ser un diccionario")
-        configuraciones[fila.modelo] = params
-    return configuraciones
+    return {familia: configuraciones[familia] for familia in orden_familias()}
 
 
 def umbral_f1_validacion(y, scores):
@@ -236,7 +227,8 @@ def evaluar_familias(
                      "cv": {"n_folds": N_FOLDS_CV, "particion": "entrenamiento",
                             "intervalo": "t de Student al 95% con desviacion muestral"},
                      "bootstrap": "estratificado pareado, condicionado a puntuaciones fijas",
-                     "limitacion_prueba": "La particion de prueba fue consultada en el analisis historico."},
+                     "limitacion_prueba": "La prueba no participo en ninguna decision de esta version, pero sus "
+            "metricas se conocian de una primera version del trabajo."},
     }
     if ejecutar_ablaciones:
         ablaciones = {}

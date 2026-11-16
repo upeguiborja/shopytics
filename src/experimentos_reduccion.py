@@ -4,7 +4,6 @@ Uso:
     python src/experimentos_reduccion.py --salida resultados/reduccion [--rapido]
     python src/experimentos_reduccion.py --n-boot 500 --semilla 42
 
-Fase A.1:
 - PCA: candidatos explicitos 5, 10, 15, 20, 28, 35 y 45 componentes, mas la
   variante que conserva al menos el 95% de la varianza. Se registra la
   varianza acumulada de cada variante y la curva completa por familia.
@@ -676,7 +675,8 @@ def ejecutar_experimentos(X_tr, y_tr, X_va, y_va, X_te, y_te, configuraciones,
             "modo_rapido": ("UMAP (2, 15), PCA (5, 15, 0.95), 2 folds, hasta 600 "
                             "filas de train y bootstrap <= 20; solo prueba de humo"),
         },
-        "limitacion": ("la particion de prueba fue consultada historicamente; los IC "
+        "limitacion": ("la prueba no participo en ninguna decision de esta version, pero sus "
+                   "metricas se conocian de una primera version; los IC "
                        "son condicionales a las variantes fijadas"),
         "pca_95": [
             {"modelo": f["modelo"], "componentes": int(f["componentes"]),

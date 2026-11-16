@@ -1,15 +1,16 @@
-"""Analisis individual de las 17 variables predictoras y eliminacion (fase A.3).
+"""Analisis individual de las 17 variables predictoras y eliminacion.
 
 Todo el analisis se calcula con el conjunto de entrenamiento:
-  - correlacion punto-biserial y AUC univariado para las numericas;
+  - correlacion punto-biserial, indice de Fisher y AUC univariado para las
+    numericas;
   - V de Cramer y AUC univariado fuera de muestra con one-hot + regresion
     logistica y cross_val_predict estratificado de 5 folds para las categoricas;
   - informacion mutua con la etiqueta;
   - redundancia entre numericas (|r| >= 0.8).
 
 El experimento de eliminacion toma RandomForest y MLP de las configuraciones
-seleccionadas y compara tres variantes: todas las variables, sin las 5
-candidatas fijadas en el plan y sin
+seleccionadas y compara tres variantes: todas las variables, sin las candidatas
+que el propio analisis marca con AUC univariado menor que 0.55 y sin
 ProductRelated_Duration ni BounceRates. Cada variante se evalua con validacion
 cruzada de 5 folds en entrenamiento y con AP en validacion. La particion de
 prueba no participa.
@@ -65,8 +66,7 @@ SALIDA = RAIZ / "resultados" / "variables"
 CONFIGURACIONES = RAIZ / "resultados" / "mejores_configuraciones.csv"
 FAMILIAS_ELIMINACION = ("RandomForest", "MLP")
 REDUNDANTES = ("ProductRelated_Duration", "BounceRates")
-CANDIDATAS = ("Weekend", "Region", "Browser", "VisitorType", "SpecialDay")
-N_CANDIDATAS = 5
+UMBRAL_CANDIDATA = 0.55
 N_FOLDS = 5
 MAX_RAPIDO = 600
 
@@ -96,6 +96,19 @@ def auc_univariado_categorica(x, y, n_splits=N_FOLDS, semilla=SEMILLA):
     if auc < 0.5:
         return 1 - auc, "negativa"
     return auc, "positiva"
+
+
+def indice_fisher(x, y):
+    """Indice de discriminacion de Fisher: (mu1 - mu0)^2 / (var1 + var0)."""
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y)
+    positivos, negativos = x[y == 1], x[y == 0]
+    if len(positivos) < 2 or len(negativos) < 2:
+        return np.nan
+    varianza = positivos.var(ddof=1) + negativos.var(ddof=1)
+    if not np.isfinite(varianza) or varianza <= 0:
+        return np.nan
+    return float((positivos.mean() - negativos.mean()) ** 2 / varianza)
 
 
 def cramers_v(x, y):
@@ -132,6 +145,7 @@ def analizar_variables(X_tr, y_tr, n_splits=N_FOLDS, semilla=SEMILLA):
                 "auc_univariado": float(auc),
                 "direccion": direccion,
                 "informacion_mutua": float(mi),
+                "indice_fisher": indice_fisher(x, y_tr),
             }
         )
 
@@ -156,6 +170,7 @@ def analizar_variables(X_tr, y_tr, n_splits=N_FOLDS, semilla=SEMILLA):
                 "auc_univariado": float(auc),
                 "direccion": direccion,
                 "informacion_mutua": float(mi),
+                "indice_fisher": np.nan,
             }
         )
 
@@ -184,16 +199,18 @@ def redundancia_numericas(X_tr):
     return pd.DataFrame(pares, columns=["variable_1", "variable_2", "correlacion"])
 
 
-def candidatas_eliminacion(tabla_analisis, n=N_CANDIDATAS):
-    """Las n variables de menor AUC univariado; empate resuelto por nombre."""
-    if n < 1:
-        raise ValueError("n_candidatas debe ser positivo")
-    if n >= len(tabla_analisis):
-        raise ValueError("n_candidatas debe ser menor que el numero de variables")
+def candidatas_eliminacion(tabla_analisis):
+    """Variables con AUC univariado por debajo del umbral de descarte.
+
+    El umbral es 0.55, el mismo que usa la recomendacion de la tabla: por
+    debajo de ese valor la variable se marca como "eliminar o combinar".
+    """
+    if "auc_univariado" not in tabla_analisis.columns:
+        raise ValueError("La tabla de analisis no contiene auc_univariado")
     orden = tabla_analisis.sort_values(
         ["auc_univariado", "variable"], ascending=[True, True]
     )
-    return orden["variable"].head(n).tolist()
+    return orden.loc[orden["auc_univariado"] < UMBRAL_CANDIDATA, "variable"].tolist()
 
 
 def cargar_configuraciones(ruta, familias=FAMILIAS_ELIMINACION):
@@ -265,21 +282,19 @@ def ejecutar_eliminacion(
     tabla_analisis,
     configuraciones=CONFIGURACIONES,
     salida=SALIDA,
-    n_candidatas=N_CANDIDATAS,
     n_splits=N_FOLDS,
     semilla=SEMILLA,
 ):
     """Compara RF y MLP del CSV con tres variantes de variables.
 
     La validacion cruzada se hace solo en entrenamiento y el AP final se
-    reporta en validacion; la prueba no se recibe ni se consulta.
+    reporta en validacion; la prueba no se recibe ni se consulta. Las
+    candidatas salen de la tabla de analisis, no de una lista fija.
     """
-    if n_candidatas != len(CANDIDATAS):
-        raise ValueError("El experimento usa las cinco candidatas fijadas en el plan")
-    candidatas = list(CANDIDATAS)
+    candidatas = candidatas_eliminacion(tabla_analisis)
     variantes = [
         ("completo", []),
-        (f"sin_{n_candidatas}_candidatas", candidatas),
+        ("sin_candidatas", candidatas),
         ("sin_redundantes", list(REDUNDANTES)),
     ]
     for _, excluir in variantes:
@@ -355,7 +370,10 @@ def ejecutar_eliminacion(
             {"nombre": nombre, "excluidas": list(excluir)} for nombre, excluir in variantes
         ],
         "candidatas": candidatas,
-        "criterio_candidatas": "cinco variables candidatas fijadas antes del experimento",
+        "criterio_candidatas": (
+            "variables con AUC univariado menor que 0.55, derivadas del propio "
+            "analisis (recomendacion 'eliminar o combinar')"
+        ),
         "n_folds": n_splits,
         "n_entrenamiento": int(len(X_tr)),
         "n_validacion": int(len(y_va)),
@@ -378,7 +396,6 @@ def ejecutar_analisis(
     configuraciones=CONFIGURACIONES,
     salida=SALIDA,
     rapido=False,
-    n_candidatas=N_CANDIDATAS,
     n_splits=N_FOLDS,
     semilla=SEMILLA,
     ejecutar_eliminacion_experimento=True,
@@ -412,7 +429,6 @@ def ejecutar_analisis(
             tabla,
             configuraciones,
             salida,
-            n_candidatas=n_candidatas,
             n_splits=n_folds_eliminacion,
             semilla=semilla,
         )
@@ -441,7 +457,6 @@ def main():
     parser.add_argument("--configuraciones", type=Path, default=CONFIGURACIONES)
     parser.add_argument("--salida", type=Path, default=SALIDA)
     parser.add_argument("--rapido", action="store_true")
-    parser.add_argument("--n-candidatas", type=int, default=N_CANDIDATAS)
     parser.add_argument("--sin-eliminacion", action="store_true")
     args = parser.parse_args()
 
@@ -454,7 +469,6 @@ def main():
         args.configuraciones,
         args.salida,
         rapido=args.rapido,
-        n_candidatas=args.n_candidatas,
         ejecutar_eliminacion_experimento=not args.sin_eliminacion,
     )
     print(resultado["analisis"].to_string(index=False))
