@@ -1,11 +1,11 @@
 {
   "ganador_validacion": "RandomForest",
   "AP_validacion": {
+    "Regresion_logistica": 0.6840864664961273,
+    "kNN": 0.7018307073794038,
     "RandomForest": 0.7414039953316898,
     "MLP": 0.7224787231125073,
-    "SVM": 0.7054172967034158,
-    "kNN": 0.7018307073794038,
-    "Regresion_logistica": 0.6840864664961273
+    "SVM": 0.7054172967034158
   },
   "n_boot": 2000,
   "semilla": 42,
@@ -15,7 +15,7 @@
     "intervalo": "t de Student al 95% con desviacion muestral"
   },
   "bootstrap": "estratificado pareado, condicionado a puntuaciones fijas",
-  "limitacion_prueba": "La particion de prueba fue consultada en el analisis historico.",
+  "limitacion_prueba": "La prueba no participo en ninguna decision de esta version, pero sus metricas se conocian de una primera version del trabajo.",
   "ablaciones": {
     "sin_pagevalues": {
       "AP_validacion": 0.3784866913236957,

@@ -155,8 +155,8 @@
   "prueba": "test se consulta solo despues de fijar todas las variantes; no participa en la seleccion",
   "bootstrap": "estratificado por clase, condicionado a las puntuaciones fijas; los IC individuales de cada metrica van como columnas en reduccion_test.csv",
   "comparaciones": "diferencias pareadas de AP y ROC_AUC de cada variante reducida contra la base de su familia, con IC bootstrap, en reduccion_comparacion.csv",
-  "varianza_pca": "pca_varianza.csv y pca_varianza_familias.csv contienen la curva de varianza acumulada de PCA de cada familia; pca_barrido.csv es el barrido de componentes y la varianza acumulada de cada variante aparece en validacion y test",
-  "coordenadas_umap2d": "umap2d_train.csv y umap2d_test.csv por familia; UMAP 2D con 15 vecinos ajustado solo con train y transformado a test; umap_2d.json repite las coordenadas en listas",
+  "varianza_pca": "pca_varianza.csv contiene la curva de varianza acumulada de PCA de cada familia; pca_barrido.csv es el barrido de componentes y la varianza acumulada de cada variante aparece en validacion y test",
+  "coordenadas_umap2d": "umap2d_test.csv y umap_2d.json guardan las coordenadas de prueba; UMAP 2D con 15 vecinos se ajusta solo con train y se transforma a test",
   "salidas": {
     "reduccion_cv.csv": "AP de CV por variante: modelo, metodo, dimensiones_solicitadas, vecinos, componentes, AP_CV, std_CV, AP_folds, finalista",
     "reduccion_validacion.csv": "AP y metricas de validacion de todas las variantes, con varianza acumulada, seleccionado y motivo de la regla de simplicidad",
@@ -164,9 +164,7 @@
     "reduccion_comparacion.csv": "diferencias pareadas de AP y ROC_AUC contra la base: modelo, metodo, metrica, valor, valor_base, diferencia_puntual, media_bootstrap, ic_inferior, ic_superior",
     "pca_barrido.csv": "barrido de PCA: componentes y AP de validacion por familia",
     "umap_barrido.csv": "barrido de UMAP: dimensiones, vecinos y AP de validacion por familia",
-    "pca_varianza.csv": "curva de varianza acumulada de PCA por familia; mismo contenido que pca_varianza_familias.csv",
-    "pca_varianza_familias.csv": "curva de varianza acumulada de PCA de todas las familias",
-    "umap2d_train.csv": "coordenadas UMAP2D de train por familia",
+    "pca_varianza.csv": "curva de varianza acumulada de PCA por familia",
     "umap2d_test.csv": "coordenadas UMAP2D de test por familia",
     "umap_2d.json": "coordenadas UMAP2D de train y test en listas, por familia"
   },
@@ -181,7 +179,7 @@
     "estimacion": "la rejilla UMAP completa es la parte con fuerte coste de computo: quince configuraciones por familia con CV y validacion; no se ejecuta en modo rapido",
     "modo_rapido": "UMAP (2, 15), PCA (5, 15, 0.95), 2 folds, hasta 600 filas de train y bootstrap <= 20; solo prueba de humo"
   },
-  "limitacion": "la particion de prueba fue consultada historicamente; los IC son condicionales a las variantes fijadas",
+  "limitacion": "la prueba no participo en ninguna decision de esta version, pero sus metricas se conocian de una primera version; los IC son condicionales a las variantes fijadas",
   "pca_95": [
     {
       "modelo": "RandomForest",
