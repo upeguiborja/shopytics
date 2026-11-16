@@ -110,7 +110,7 @@ Las etapas se ejecutan en este orden y cada una consume las salidas de las anter
 | `sensibilidad` | Repetición de la búsqueda sin `PageValues` | `mejores_sin_pagevalues.csv`, `comparacion_pagevalues.csv` |
 | `specialday` | Ablación, comparación numérica/one-hot y AP mensual | `specialday_ablacion.csv`, `specialday_codificacion.csv`, `specialday_por_mes.csv` |
 | `variables` | AUC univariado, información mutua, redundancia y eliminación | `variables/analisis_variables.csv`, `redundancia_numericas.csv`, `eliminacion_validacion.csv` |
-| `reduccion` | PCA y UMAP para las dos mejores familias, con selección en validación | `reduccion/reduccion_test.csv`, `reduccion_validacion.csv`, `reduccion_cv.csv`, `reduccion_protocolo.json` |
+| `reduccion` | PCA y UMAP para las dos mejores familias, con la regla 1-SE en validación | `reduccion/reduccion_test.csv`, `reduccion_validacion.csv`, `reduccion_cv.csv`, `reduccion_protocolo.json` |
 | `figuras` | Figuras del informe y del notebook | `informe_entregable_II_latex/figuras/`, `resultados/figuras/` |
 
 Al finalizar se escribe `resultados/manifiesto.json` con el SHA-256 de los datos, la semilla,
@@ -230,14 +230,17 @@ Fuente: `resultados/evaluacion_familias/metricas.csv`.
   `resumen.json` y `comparacion_pagevalues.csv`.
 - La ablación de `SpecialDay` es marginal: el AP de validación pasa de 0,7414 a 0,7418
   (Δ = −0,0004). Fuente: `specialday_ablacion.csv`.
-- Reducción de dimensión, con la rejilla completa del protocolo: la base queda en AP de
-  prueba 0,7496 (Random Forest) y 0,7494 (MLP). La regla de simplicidad eligió PCA con 5
-  componentes para Random Forest (AP 0,6897) y 10 para la MLP (0,7284), y UMAP con 5
-  dimensiones y 30 vecinos (0,6663) y con 2 dimensiones y 50 vecinos (0,6349),
-  respectivamente; la referencia UMAP de dos dimensiones dio 0,6595 y 0,5815. Las ocho
-  diferencias pareadas contra la base excluyen cero, de modo que reducir dimensiones no
-  mejora el resultado en este problema. Fuentes: `reduccion/reduccion_test.csv` y
-  `reduccion/reduccion_comparacion.csv`.
+- Reducción de dimensión, con la rejilla completa del protocolo y la regla 1-SE: la base
+  queda en AP de prueba 0,7496 (Random Forest) y 0,7494 (MLP). La regla eligió PCA con 10
+  componentes para Random Forest (AP 0,7236) y 15 para la MLP (0,7408), y UMAP con 15
+  dimensiones y 50 vecinos (0,6879) y con 5 dimensiones y 30 vecinos (0,6381),
+  respectivamente; la referencia UMAP de dos dimensiones dio 0,6595 y 0,5815. En Random
+  Forest, PCA cuesta −0,0260 de AP con IC [−0,0438; −0,0090] y UMAP cuesta −0,0616 con IC
+  [−0,0893; −0,0353]. En la MLP, la caída con PCA es −0,0086 con IC [−0,0219; 0,0050], que
+  incluye cero, mientras que UMAP cuesta −0,1113. Reducir dimensiones no mejora el
+  resultado; UMAP sirve para visualizar, no para modelar. Fuentes:
+  `reduccion/reduccion_test.csv`, `reduccion/reduccion_comparacion.csv` y
+  `reduccion/reduccion_protocolo.json`.
 
 ### Limitaciones de la evaluación
 
