@@ -86,3 +86,23 @@ def test_la_particion_de_prueba_no_participa_en_la_seleccion():
     assert "seleccion" in protocolo
     for fila in protocolo["seleccion"]:
         assert "AP_CV" in fila or "AP_CV" in fila.keys()
+
+
+EXTREMOS_DOCUMENTADOS = {
+    "RandomForest": {"clf__max_features": 0.7, "clf__min_samples_leaf": 20},
+    "MLP": {"clf__alpha": 0.1},
+}
+
+
+def test_la_configuracion_elegida_usa_los_extremos_documentados():
+    ruta = RES / "mejores_configuraciones.csv"
+    if not ruta.is_file():
+        pytest.skip("No existe mejores_configuraciones.csv")
+    tabla = pd.read_csv(ruta).set_index("modelo")["params"]
+    informe = (RAIZ / "informe_entregable_II_latex" / "main.tex").read_text(encoding="utf-8")
+    for modelo, extremos in EXTREMOS_DOCUMENTADOS.items():
+        params = ast.literal_eval(tabla[modelo])
+        for clave, valor in extremos.items():
+            assert params[clave] == valor, f"{modelo} ya no usa {clave}={valor}"
+    for texto in ("max\\_features}=0,7", "min\\_samples\\_leaf}=20", "\\alpha=0{,}1"):
+        assert texto in informe, f"El informe no documenta {texto}"

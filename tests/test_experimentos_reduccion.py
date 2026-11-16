@@ -246,18 +246,13 @@ def test_protocolo_salidas_y_ausencia_de_fuga(tmp_path, monkeypatch):
     assert np.allclose(
         varianza.groupby("modelo")["varianza_acumulada"].max().to_numpy(), 1.0
     )
-    varianza_familias = pd.read_csv(tmp_path / "a" / "pca_varianza_familias.csv")
-    assert len(varianza_familias) == 6
-    assert set(varianza_familias["modelo"]) == {"A", "B"}
+    assert not (tmp_path / "a" / "pca_varianza_familias.csv").exists()
+    assert not (tmp_path / "a" / "umap2d_train.csv").exists()
 
-    coords_train = pd.read_csv(tmp_path / "a" / "umap2d_train.csv")
     coords_test = pd.read_csv(tmp_path / "a" / "umap2d_test.csv")
-    assert len(coords_train) == 160
     assert len(coords_test) == 40
-    assert set(coords_train["indice"]) == set(X.iloc[:80].index)
     assert set(coords_test["indice"]) == set(X.iloc[100:].index)
-    assert (coords_train["origen"] == "umap2d").all()
-    assert np.isfinite(coords_train[["x", "y"]]).all().all()
+    assert (coords_test["origen"] == "umap2d").all()
     assert np.isfinite(coords_test[["x", "y"]]).all().all()
 
     coordenadas_json = json.loads(

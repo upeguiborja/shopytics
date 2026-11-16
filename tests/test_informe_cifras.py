@@ -6,6 +6,7 @@ documentos no se actualizan, la prueba falla.
 """
 
 import json
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -123,3 +124,74 @@ def test_el_informe_no_conserva_marcadores_de_trabajo():
         datos = json.loads(protocolo.read_text(encoding="utf-8"))
         assert "regla_simplicidad" in datos
         assert "error_estandar" in datos["regla_simplicidad"]
+
+
+def test_cada_etiqueta_de_figura_y_tabla_tiene_referencia():
+    informe = _leer(INFORME)
+    etiquetas = re.findall(r"\\label\{((?:fig|tab):[^}]+)\}", informe)
+    assert etiquetas, "El informe no declara etiquetas de figura o tabla"
+    sin_cita = [etiqueta for etiqueta in etiquetas
+                if f"\\ref{{{etiqueta}}}" not in informe]
+    assert not sin_cita, f"Etiquetas sin referencia en el texto: {sin_cita}"
+
+
+def test_porcentajes_de_reduccion_coinciden_con_el_csv():
+    tabla = _reduccion()
+    informe = _leer(INFORME)
+    for fila in tabla.itertuples():
+        if pd.isna(fila.componentes):
+            continue
+        porcentaje = (1 - float(fila.componentes) / 73) * 100
+        texto = f"{porcentaje:.1f}".replace(".", ",")
+        assert texto + "\\,\\%" in informe, (
+            f"La reducción de {fila.modelo} {fila.metodo} ({texto} %) no aparece en el informe"
+        )
+
+
+def test_cifras_de_eliminacion_en_informe_y_readme():
+    ruta = RES / "variables" / "eliminacion_validacion.csv"
+    if not ruta.is_file():
+        pytest.skip("No existe eliminacion_validacion.csv")
+    tabla = pd.read_csv(ruta)
+    for modelo in ("RandomForest", "MLP"):
+        for variante in ("completo", "sin_candidatas"):
+            valor = float(tabla[(tabla["modelo"] == modelo)
+                                & (tabla["variante"] == variante)]["AP"].iloc[0])
+            for nombre, texto in (("informe", _leer(INFORME)), ("README", _leer(README))):
+                assert _aparece(texto, valor), (
+                    f"AP de {modelo} en {variante} ({valor:.4f}) no aparece en el {nombre}"
+                )
+
+
+def test_valores_de_c_de_svm_coinciden_con_la_malla():
+    import sys
+
+    sys.path.insert(0, str(RAIZ / "src"))
+    import busqueda
+    import proyecto_ml
+
+    _, mallas = busqueda.mallas_ampliadas(proyecto_ml.construir_modelos)
+    informe = _leer(INFORME)
+    for malla in mallas["SVM"]:
+        valores = ";".join(f"{v:g}" for v in malla["clf__C"]).replace(".", "{,}")
+        assert valores in informe, f"Los valores de C de SVM {valores} no aparecen en el informe"
+
+
+def test_el_informe_no_supera_diez_paginas():
+    log = RAIZ / "informe_entregable_II_latex" / "main.log"
+    if not log.is_file():
+        pytest.skip("No existe main.log; compile el informe")
+    texto = log.read_text(encoding="utf-8", errors="ignore")
+    coincidencia = re.search(r"Output written on main\.pdf \((\d+) pages?", texto)
+    if not coincidencia:
+        pytest.skip("El log no registra el número de páginas")
+    assert int(coincidencia.group(1)) <= 10
+
+
+def test_el_pdf_final_no_es_mas_antiguo_que_la_fuente():
+    pdf = RAIZ / "informe_entregable_II.pdf"
+    if not pdf.is_file():
+        pytest.skip("No existe informe_entregable_II.pdf")
+    assert pdf.stat().st_mtime >= INFORME.stat().st_mtime - 1, (
+        "El PDF de la raíz es más antiguo que main.tex: recompile y cópielo"
+    )
