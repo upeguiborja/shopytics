@@ -255,6 +255,22 @@ class TransformadorUMAP(BaseEstimator, TransformerMixin):
         return np.asarray([f"umap_{i}" for i in range(self.n_components)], dtype=object)
 
 
+MAX_RAPIDO = 600
+
+
+def _submuestra_rapida(X_tr, y_tr, semilla=SEMILLA):
+    """Submuestra estratificada de entrenamiento para el modo rapido."""
+    if len(X_tr) <= MAX_RAPIDO:
+        return X_tr, y_tr
+    indices, _ = train_test_split(
+        np.arange(len(X_tr)),
+        train_size=MAX_RAPIDO,
+        stratify=np.asarray(y_tr),
+        random_state=semilla,
+    )
+    return X_tr.iloc[indices], y_tr.iloc[indices]
+
+
 def _normalizar_excluir(excluir) -> tuple[str, ...]:
     """Convierte excluir en una tupla validada de predictoras."""
     if excluir is None:

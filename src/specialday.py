@@ -29,6 +29,7 @@ from proyecto_ml import (
     CSV,
     RAIZ,
     SEMILLA,
+    _submuestra_rapida,
     cargar_datos,
     construir_modelos,
     particionar,
@@ -45,7 +46,6 @@ FAMILIAS = (
 )
 CODIFICACIONES = ("numerico", "onehot")
 N_FOLDS = 5
-MAX_RAPIDO = 600
 ORDEN_MESES = (
     "Jan", "Feb", "Mar", "Apr", "May", "June",
     "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -80,18 +80,6 @@ def _construir_modelo(nombre, params, codificar_specialday="numerico", incluir_s
         codificar_specialday=codificar_specialday,
     )
     return clone(modelos[nombre]).set_params(**params)
-
-
-def _submuestra_rapida(X_tr, y_tr, semilla=SEMILLA):
-    if len(X_tr) <= MAX_RAPIDO:
-        return X_tr, y_tr
-    idx, _ = train_test_split(
-        np.arange(len(X_tr)),
-        train_size=MAX_RAPIDO,
-        stratify=np.asarray(y_tr),
-        random_state=semilla,
-    )
-    return X_tr.iloc[idx], y_tr.iloc[idx]
 
 
 def _ap_cv(modelo, X, y, n_folds, n_jobs, semilla):
