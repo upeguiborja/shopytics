@@ -796,12 +796,14 @@ def _etiqueta_representacion(metodo, componentes=None) -> str:
         return "PCA"
     if "umap" in minusculas:
         if "2d" in minusculas or "umap2" in minusculas:
-            return "UMAP 2D"
+            # Variante fija de dos dimensiones: no debe confundirse con un UMAP
+            # seleccionado que ademas tenga dos componentes.
+            return "UMAP 2 D (ref.)"
         if componentes is not None and not pd.isna(componentes):
             try:
                 if int(float(componentes)) == 2:
-                    return "UMAP 2D"
-                return f"UMAP {int(float(componentes))}"
+                    return "UMAP 2 d"
+                return f"UMAP {int(float(componentes))} d"
             except (TypeError, ValueError):
                 pass
         return "UMAP"
@@ -813,7 +815,7 @@ def _orden_representacion(etiqueta: str):
         return (0, 0)
     if etiqueta == "PCA":
         return (1, 0)
-    if etiqueta.startswith("UMAP 2D"):
+    if etiqueta.startswith("UMAP 2 D"):
         return (3, 0)
     if etiqueta.startswith("UMAP"):
         digitos = re.findall(r"\d+", etiqueta)

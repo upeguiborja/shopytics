@@ -224,11 +224,14 @@ def test_meses_en_espanol_y_orden_cronologico():
 
 
 def test_representaciones_de_reduccion_ordenadas():
-    etiquetas = ["UMAP 10", "Base", "PCA", "UMAP 2D"]
-    assert sorted(etiquetas, key=figuras._orden_representacion) == ["Base", "PCA", "UMAP 10", "UMAP 2D"]
+    etiquetas = ["UMAP 10 d", "Base", "PCA", "UMAP 2 D (ref.)"]
+    assert sorted(etiquetas, key=figuras._orden_representacion) == [
+        "Base", "PCA", "UMAP 10 d", "UMAP 2 D (ref.)"
+    ]
     assert figuras._etiqueta_representacion("PCA", 28) == "PCA"
-    assert figuras._etiqueta_representacion("UMAP", 2) == "UMAP 2D"
-    assert figuras._etiqueta_representacion("UMAP", 10) == "UMAP 10"
+    assert figuras._etiqueta_representacion("UMAP", 2) == "UMAP 2 d"
+    assert figuras._etiqueta_representacion("UMAP", 10) == "UMAP 10 d"
+    assert figuras._etiqueta_representacion("UMAP2D", 2) == "UMAP 2 D (ref.)"
 
 
 def test_generar_figuras_escribe_seis_de_informe_y_seis_de_notebook(tmp_path):
