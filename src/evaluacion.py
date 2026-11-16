@@ -1,7 +1,10 @@
 """Evaluacion reproducible de configuraciones seleccionadas, sin busqueda.
 
-Los intervalos son condicionales a modelos fijos y la particion de prueba ya
-se consulto historicamente, por lo que no constituye una prueba independiente.
+Incluye validacion cruzada 5-fold sobre entrenamiento con las mismas
+particiones de la busqueda, intervalos t al 95 % con desviacion muestral y
+comparaciones pareadas de AP y ROC-AUC en prueba. Los intervalos bootstrap son
+condicionales a modelos fijos y la particion de prueba ya se consulto
+historicamente, por lo que no constituye una prueba independiente.
 """
 
 from __future__ import annotations
@@ -15,8 +18,16 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.stats import t as t_dist
 from sklearn.base import clone
-from sklearn.metrics import average_precision_score, confusion_matrix, precision_recall_curve, roc_curve
+from sklearn.metrics import (
+    average_precision_score,
+    confusion_matrix,
+    precision_recall_curve,
+    roc_auc_score,
+    roc_curve,
+)
+from sklearn.model_selection import StratifiedKFold, cross_validate
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -36,13 +47,8 @@ from proyecto_ml import (  # noqa: E402
 
 SALIDA = RAIZ / "resultados"
 SALIDA_FAMILIAS = SALIDA / "evaluacion_familias"
-
-
-def cargar_ganador(salida: Path = SALIDA):
-    ganador = json.loads((salida / "ganador.json").read_text(encoding="utf-8"))
-    nombre = ganador["modelo"]
-    params = ast.literal_eval(ganador["params"])
-    return nombre, params
+N_FOLDS_CV = 5
+METRICAS_CV = {"AP": "average_precision", "ROC_AUC": "roc_auc", "F1": "f1"}
 
 
 def ajustar(nombre, params, X_tr, y_tr, incluir_pagevalues=True, incluir_specialday=True):
@@ -92,6 +98,49 @@ def umbral_f1_validacion(y, scores):
     return float(umbrales[i]), float(f1[i])
 
 
+def intervalo_t(valores, confianza=0.95):
+    """Media, desviacion muestral e IC t de las puntuaciones de los folds."""
+    valores = np.asarray(valores, dtype=float)
+    if valores.ndim != 1 or valores.size < 2:
+        raise ValueError("Se requieren al menos dos folds para el intervalo t")
+    n = valores.size
+    media = float(valores.mean())
+    desviacion = float(valores.std(ddof=1))
+    error_estandar = desviacion / np.sqrt(n)
+    t_critico = float(t_dist.ppf(1 - (1 - confianza) / 2, df=n - 1))
+    return {
+        "n_folds": int(n),
+        "media": media,
+        "desviacion": desviacion,
+        "error_estandar": float(error_estandar),
+        "ic_inferior": float(media - t_critico * error_estandar),
+        "ic_superior": float(media + t_critico * error_estandar),
+    }
+
+
+def validacion_cruzada(configuraciones, X, y, n_splits=N_FOLDS_CV, semilla=SEMILLA):
+    """CV estratificada de las configuraciones finales sobre entrenamiento.
+
+    Usa el mismo esquema que la busqueda: StratifiedKFold con mezcla y semilla.
+    """
+    if n_splits < 2:
+        raise ValueError("n_splits debe ser al menos 2")
+    cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=semilla)
+    modelos, _ = construir_modelos()
+    filas = []
+    for nombre, params in configuraciones.items():
+        modelo = clone(modelos[nombre]).set_params(**params)
+        resultados = cross_validate(
+            modelo, X, y, cv=cv, scoring=METRICAS_CV, n_jobs=1, error_score="raise"
+        )
+        for metrica in METRICAS_CV:
+            filas.append({"modelo": nombre, "metrica": metrica,
+                          **intervalo_t(resultados[f"test_{metrica}"])})
+    columnas = ["modelo", "metrica", "n_folds", "media", "desviacion",
+                "error_estandar", "ic_inferior", "ic_superior"]
+    return pd.DataFrame(filas, columns=columnas)
+
+
 def evaluar_familias(
     ruta_datos=CSV,
     ruta_configuraciones=SALIDA / "mejores_configuraciones.csv",
@@ -114,6 +163,8 @@ def evaluar_familias(
     _, X, y, idx_tr, idx_va, idx_te = particionar(cargar_datos(ruta_datos))
     particiones = {"entrenamiento": idx_tr, "validacion": idx_va, "test": idx_te}
     X_tr, y_tr = X.iloc[idx_tr], y.iloc[idx_tr].astype(int)
+    # La CV reproduce los folds de la busqueda y no consulta validacion ni prueba.
+    cv_intervalos = validacion_cruzada(configuraciones, X_tr, y_tr, semilla=semilla)
     modelos = {nombre: ajustar(nombre, params, X_tr, y_tr)
                for nombre, params in configuraciones.items()}
 
@@ -159,25 +210,31 @@ def evaluar_familias(
                     yt, yp_umbral, labels=[0, 1]
                 ).tolist()
 
+    y_test = y.iloc[idx_te].to_numpy()
     comparaciones = []
     for a, b in combinations(configuraciones, 2):
-        puntual, media, inferior, superior = bootstrap_diferencia(
-            y.iloc[idx_te].to_numpy(), scores_test[a], scores_test[b],
-            average_precision_score, n_boot=n_boot, semilla=semilla,
-        )
-        comparaciones.append({"modelo_a": a, "modelo_b": b, "diferencia_AP": puntual,
-                              "media_bootstrap": media, "ic_inferior": inferior,
-                              "ic_superior": superior, "n_boot": n_boot})
+        for metrica, funcion in (("AP", average_precision_score), ("ROC_AUC", roc_auc_score)):
+            puntual, media, inferior, superior = bootstrap_diferencia(
+                y_test, scores_test[a], scores_test[b], funcion,
+                n_boot=n_boot, semilla=semilla,
+            )
+            comparaciones.append({"modelo_a": a, "modelo_b": b, "metrica": metrica,
+                                  "diferencia_puntual": puntual, "media_bootstrap": media,
+                                  "ic_inferior": inferior, "ic_superior": superior,
+                                  "n_boot": n_boot})
 
     resultado = {
+        "cv_intervalos": cv_intervalos,
         "metricas": pd.DataFrame(filas),
         "intervalos": pd.concat(intervalos, ignore_index=True),
         "umbrales": pd.DataFrame(umbrales),
         "metricas_test_umbral": pd.DataFrame(filas_umbral),
-        "comparaciones_ap_test": pd.DataFrame(comparaciones),
+        "comparaciones_test": pd.DataFrame(comparaciones),
         "matrices": matrices, "curvas": curvas,
         "resumen": {"ganador_validacion": ganador, "AP_validacion": ap_validacion,
                      "n_boot": n_boot, "semilla": semilla,
+                     "cv": {"n_folds": N_FOLDS_CV, "particion": "entrenamiento",
+                            "intervalo": "t de Student al 95% con desviacion muestral"},
                      "bootstrap": "estratificado pareado, condicionado a puntuaciones fijas",
                      "limitacion_prueba": "La particion de prueba fue consultada en el analisis historico."},
     }
@@ -201,7 +258,8 @@ def evaluar_familias(
 
     salida = Path(salida)
     salida.mkdir(parents=True, exist_ok=True)
-    for nombre in ("metricas", "intervalos", "umbrales", "metricas_test_umbral", "comparaciones_ap_test"):
+    for nombre in ("cv_intervalos", "metricas", "intervalos", "umbrales",
+                   "metricas_test_umbral", "comparaciones_test"):
         resultado[nombre].to_csv(salida / f"{nombre}.csv", index=False)
     for nombre in ("matrices", "curvas", "resumen"):
         (salida / f"{nombre}.json").write_text(
@@ -210,98 +268,6 @@ def evaluar_familias(
     for nombre, tabla in resultado.get("ablaciones", {}).items():
         tabla.to_csv(salida / f"ablacion_{nombre}.csv", index=False)
     return resultado
-
-
-def main() -> None:
-    SALIDA.mkdir(parents=True, exist_ok=True)
-    datos = cargar_datos(CSV)
-    _, X, y, idx_tr, idx_va, idx_te = particionar(datos)
-    X_tr, y_tr = X.loc[idx_tr], y.loc[idx_tr].astype(int)
-    X_va, y_va = X.loc[idx_va], y.loc[idx_va].astype(int)
-    X_te, y_te = X.loc[idx_te], y.loc[idx_te].astype(int)
-
-    nombre, params = cargar_ganador()
-    print(f"Ganador: {nombre} {params}")
-
-    modelo = ajustar(nombre, params, X_tr, y_tr)
-
-    # Metricas por particion (test solo se reporta, no participa en decisiones)
-    filas = [
-        metricas_particion(modelo, X_tr, y_tr, "entrenamiento", nombre),
-        metricas_particion(modelo, X_va, y_va, "validacion", nombre),
-        metricas_particion(modelo, X_te, y_te, "test", nombre),
-    ]
-    pd.DataFrame(filas).to_csv(SALIDA / "metricas_ganador.csv", index=False)
-
-    # IC bootstrap por particion
-    ic = []
-    for part, Xp, yp in [("entrenamiento", X_tr, y_tr), ("validacion", X_va, y_va), ("test", X_te, y_te)]:
-        tabla = bootstrap_ic(yp.to_numpy(), predecir(modelo, Xp), puntuacion(modelo, Xp))
-        tabla["modelo"] = nombre
-        tabla["particion"] = part
-        ic.append(tabla)
-    pd.concat(ic, ignore_index=True).to_csv(SALIDA / "intervalos_confianza_ganador.csv", index=False)
-
-    # Matriz de confusion en prueba
-    from sklearn.metrics import confusion_matrix
-
-    cm = confusion_matrix(y_te, predecir(modelo, X_te), labels=[0, 1])
-    (SALIDA / "matriz_confusion_test.json").write_text(
-        json.dumps({"modelo": nombre, "matriz": cm.tolist()}, indent=2), encoding="utf-8"
-    )
-
-    # Curvas PR/ROC en validacion
-    ys = puntuacion(modelo, X_va)
-    pr_p, pr_r, _ = precision_recall_curve(y_va, ys)
-    fpr, tpr, _ = roc_curve(y_va, ys)
-    (SALIDA / "curvas_validacion_ganador.json").write_text(
-        json.dumps(
-            {
-                "modelo": nombre,
-                "pr_precision": pr_p.tolist(),
-                "pr_recall": pr_r.tolist(),
-                "roc_fpr": fpr.tolist(),
-                "roc_tpr": tpr.tolist(),
-            }
-        ),
-        encoding="utf-8",
-    )
-
-    # Sensibilidad sin PageValues (hiperparametros fijos)
-    m_sin_pv = ajustar(nombre, params, X_tr, y_tr, incluir_pagevalues=False)
-    filas_sin_pv = [
-        metricas_particion(m_sin_pv, X_tr, y_tr, "entrenamiento", nombre),
-        metricas_particion(m_sin_pv, X_va, y_va, "validacion", nombre),
-    ]
-    pd.DataFrame(filas_sin_pv).to_csv(SALIDA / "sensibilidad_sin_pagevalues_ganador.csv", index=False)
-
-    # Ablacion sin SpecialDay (hiperparametros fijos)
-    m_sin_sd = ajustar(nombre, params, X_tr, y_tr, incluir_specialday=False)
-    filas_sin_sd = [
-        metricas_particion(m_sin_sd, X_tr, y_tr, "entrenamiento", nombre),
-        metricas_particion(m_sin_sd, X_va, y_va, "validacion", nombre),
-    ]
-    pd.DataFrame(filas_sin_sd).to_csv(SALIDA / "ablacion_sin_specialday_ganador.csv", index=False)
-
-    # Comparacion AP validacion con/sin PageValues y SpecialDay
-    ap_con = filas[1]["AP"]
-    ap_sin_pv = filas_sin_pv[1]["AP"]
-    ap_sin_sd = filas_sin_sd[1]["AP"]
-    resumen = {
-        "modelo": nombre,
-        "params": params,
-        "AP_validacion_con_todas": ap_con,
-        "AP_validacion_sin_PageValues": ap_sin_pv,
-        "AP_validacion_sin_SpecialDay": ap_sin_sd,
-        "delta_AP_sin_PageValues": ap_con - ap_sin_pv,
-        "delta_AP_sin_SpecialDay": ap_con - ap_sin_sd,
-    }
-    (SALIDA / "resumen_evaluacion.json").write_text(
-        json.dumps(resumen, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-
-    print(pd.DataFrame(filas).to_string(index=False))
-    print(json.dumps(resumen, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

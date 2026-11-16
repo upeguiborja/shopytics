@@ -9,6 +9,11 @@
   },
   "n_boot": 2000,
   "semilla": 42,
+  "cv": {
+    "n_folds": 5,
+    "particion": "entrenamiento",
+    "intervalo": "t de Student al 95% con desviacion muestral"
+  },
   "bootstrap": "estratificado pareado, condicionado a puntuaciones fijas",
   "limitacion_prueba": "La particion de prueba fue consultada en el analisis historico.",
   "ablaciones": {

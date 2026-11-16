@@ -1,0 +1,6 @@
+modelo,AP_con_SpecialDay,AP_sin_SpecialDay,delta_AP_con_menos_sin,params
+Regresion_logistica,0.6840864664961273,0.6844581055530087,-0.0003716390568814232,"{'clf__C': 0.1, 'clf__class_weight': None, 'pre__num__log__usar_log': True}"
+kNN,0.7018307073794038,0.7066295250361759,-0.0047988176567721474,"{'clf__n_neighbors': 81, 'clf__p': 2, 'clf__weights': 'distance', 'pre__num__log__usar_log': True}"
+RandomForest,0.7414039953316898,0.7417741592117094,-0.0003701638800196472,"{'clf__class_weight': None, 'clf__max_depth': 8, 'clf__max_features': 0.7, 'clf__min_samples_leaf': 20, 'pre__num__log__usar_log': True}"
+MLP,0.7224787231125073,0.7180736294037886,0.004405093708718666,"{'clf__alpha': 0.1, 'clf__hidden_layer_sizes': (64,), 'clf__learning_rate_init': 0.03, 'pre__num__log__usar_log': True}"
+SVM,0.7054172967034158,0.7040423162683501,0.0013749804350656758,"{'clf__C': 30, 'clf__class_weight': None, 'clf__gamma': 0.01, 'clf__kernel': 'rbf', 'pre__num__log__usar_log': True}"

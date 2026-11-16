@@ -1,0 +1,11 @@
+modelo,mes,n,positivos,AP_validacion
+RandomForest,Feb,37,0,
+RandomForest,Mar,359,38,0.7852839371173014
+RandomForest,May,663,74,0.8769178618639693
+RandomForest,June,58,7,0.6900107411385605
+RandomForest,Jul,96,15,0.5983157914006174
+RandomForest,Aug,76,8,0.5679586407240672
+RandomForest,Sep,87,17,0.8389789301300458
+RandomForest,Oct,98,15,0.5890773471693194
+RandomForest,Nov,633,166,0.6826063248103323
+RandomForest,Dec,334,41,0.7669509962460803

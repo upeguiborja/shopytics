@@ -254,12 +254,54 @@ class TransformadorUMAP(BaseEstimator, TransformerMixin):
         return np.asarray([f"umap_{i}" for i in range(self.n_components)], dtype=object)
 
 
+def _normalizar_excluir(excluir) -> tuple[str, ...]:
+    """Convierte excluir en una tupla validada de predictoras."""
+    if excluir is None:
+        return ()
+    if isinstance(excluir, str):
+        nombres = (excluir,)
+    else:
+        try:
+            nombres = tuple(excluir)
+        except TypeError as exc:
+            raise TypeError("excluir debe ser un iterable de nombres de columna") from exc
+    desconocidas = [c for c in nombres if c not in PREDICTORAS]
+    if desconocidas:
+        raise ValueError(f"Columnas no predictoras en excluir: {desconocidas}")
+    return nombres
+
+
 def construir_preprocesador(
     usar_log: bool = True,
     incluir_pagevalues: bool = True,
     incluir_specialday: bool = True,
+    codificar_specialday: str = "numerico",
+    excluir=None,
 ):
-    numericas = list(LOG_VARS if incluir_pagevalues else [c for c in LOG_VARS if c != "PageValues"])
+    """Construye el ColumnTransformer; toda la codificacion se ajusta en train.
+
+    excluir generaliza las banderas: los nombres indicados nunca llegan al
+    modelo, ademas de PageValues cuando incluir_pagevalues es False y de
+    SpecialDay cuando incluir_specialday es False. codificar_specialday admite
+    "numerico" (columna estandarizada) y "onehot" (seis niveles dentro del
+    bloque categorico).
+    """
+    if codificar_specialday not in {"numerico", "onehot"}:
+        raise ValueError("codificar_specialday debe ser 'numerico' o 'onehot'")
+    excluidas = set(_normalizar_excluir(excluir))
+    if not incluir_pagevalues:
+        excluidas.add("PageValues")
+    if not incluir_specialday:
+        excluidas.add("SpecialDay")
+    numericas = [c for c in LOG_VARS if c not in excluidas]
+    nominales = [c for c in NOMINALES if c not in excluidas]
+    binarias = [c for c in BINARIAS if c not in excluidas]
+    especiales_numericas = [c for c in ESPECIALES if c not in excluidas]
+    especiales_onehot = []
+    if codificar_specialday == "onehot":
+        especiales_onehot = especiales_numericas
+        especiales_numericas = []
+    categorias = nominales + especiales_onehot
     num_pipe = Pipeline(
         [
             ("imputar", SimpleImputer(strategy="median")),
@@ -273,12 +315,14 @@ def construir_preprocesador(
             ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
         ]
     )
-    transformadores = [
-        ("num", num_pipe, numericas),
-        ("cat", cat_pipe, NOMINALES),
-        ("bin", "passthrough", BINARIAS),
-    ]
-    if incluir_specialday:
+    transformadores = []
+    if numericas:
+        transformadores.append(("num", num_pipe, numericas))
+    if categorias:
+        transformadores.append(("cat", cat_pipe, categorias))
+    if binarias:
+        transformadores.append(("bin", "passthrough", binarias))
+    if especiales_numericas:
         transformadores.append(
             (
                 "esp",
@@ -288,21 +332,37 @@ def construir_preprocesador(
                         ("escalar", StandardScaler()),
                     ]
                 ),
-                ESPECIALES,
+                especiales_numericas,
             )
         )
+    if not transformadores:
+        raise ValueError("El preprocesador no tiene columnas predictoras")
     return ColumnTransformer(transformadores, remainder="drop")
 
 
-def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool = True):
+def construir_modelos(
+    incluir_pagevalues: bool = True,
+    incluir_specialday: bool = True,
+    codificar_specialday: str = "numerico",
+    excluir=None,
+):
     """Devuelve (modelos, mallas) con transformacion log1p como hiperparametro."""
-    pre = construir_preprocesador
+    excluir = _normalizar_excluir(excluir)
+
+    def pre():
+        return construir_preprocesador(
+            incluir_pagevalues=incluir_pagevalues,
+            incluir_specialday=incluir_specialday,
+            codificar_specialday=codificar_specialday,
+            excluir=excluir,
+        )
+
     modelos = {}
     mallas = {}
 
     modelos["Regresion_logistica"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             ("clf", LogisticRegression(solver="lbfgs", max_iter=3000, random_state=SEMILLA)),
         ]
     )
@@ -314,7 +374,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["kNN"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             ("clf", KNeighborsClassifier()),
         ]
     )
@@ -327,7 +387,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["RandomForest"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             (
                 "clf",
                 RandomForestClassifier(
@@ -346,7 +406,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["MLP"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             (
                 "clf",
                 MLPClassifier(
@@ -369,7 +429,7 @@ def construir_modelos(incluir_pagevalues: bool = True, incluir_specialday: bool 
 
     modelos["SVM"] = Pipeline(
         [
-            ("pre", pre(incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday)),
+            ("pre", pre()),
             ("clf", SVC(probability=False, random_state=SEMILLA)),
         ]
     )
