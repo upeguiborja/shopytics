@@ -53,6 +53,7 @@ from proyecto_ml import (  # noqa: E402
     NOMINALES,
     NUMERICAS,
     SEMILLA,
+    _submuestra_rapida,
     cargar_datos,
     construir_modelos,
     metricas,
@@ -68,7 +69,6 @@ FAMILIAS_ELIMINACION = ("RandomForest", "MLP")
 REDUNDANTES = ("ProductRelated_Duration", "BounceRates")
 UMBRAL_CANDIDATA = 0.55
 N_FOLDS = 5
-MAX_RAPIDO = 600
 
 
 def auc_univariado_numerica(x, y):
@@ -163,7 +163,7 @@ def analizar_variables(X_tr, y_tr, n_splits=N_FOLDS, semilla=SEMILLA):
         filas.append(
             {
                 "variable": var,
-                "tipo": "categórica",
+                "tipo": "binaria" if var in BINARIAS else "categórica",
                 "metrica": "V de Cramér",
                 "valor": float(v),
                 "p_valor": np.nan,
@@ -260,18 +260,6 @@ def _validar_configuraciones(configuraciones):
             raise ValueError(f"Los parametros de {familia} deben ser un diccionario")
         resultado.append((familia, dict(params)))
     return resultado
-
-
-def _submuestra_rapida(X_tr, y_tr, semilla=SEMILLA):
-    if len(X_tr) <= MAX_RAPIDO:
-        return X_tr, y_tr
-    indices, _ = train_test_split(
-        np.arange(len(X_tr)),
-        train_size=MAX_RAPIDO,
-        stratify=np.asarray(y_tr),
-        random_state=semilla,
-    )
-    return X_tr.iloc[indices], y_tr.iloc[indices]
 
 
 def ejecutar_eliminacion(

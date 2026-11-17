@@ -1,4 +1,4 @@
-"""Pruebas del analisis individual y del experimento de eliminacion (fase A.3)."""
+"""Pruebas del analisis individual y del experimento de eliminacion."""
 
 import json
 import runpy
@@ -88,7 +88,8 @@ def test_analisis_genera_tabla_de_las_17_variables():
 
     tipos = dict(zip(tabla["variable"], tabla["tipo"]))
     assert all(tipos[v] == "numérica" for v in NUMERICAS + ESPECIALES)
-    assert all(tipos[v] == "categórica" for v in NOMINALES + BINARIAS)
+    assert all(tipos[v] == "categórica" for v in NOMINALES)
+    assert all(tipos[v] == "binaria" for v in BINARIAS)
 
     for fila in tabla.itertuples():
         esperado = (

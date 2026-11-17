@@ -219,6 +219,12 @@ def test_resumen_parametro_ordena_valores_y_trata_sin_limite(tmp_path):
     assert figuras._etiqueta_valor("sin límite") == "sin límite"
 
 
+def test_orden_max_features_log2_sqrt_y_fracciones_crecientes():
+    valores = ["0.7", "sqrt", "0.3", "log2", "0.5"]
+    assert sorted(valores, key=figuras._orden_valor) == [
+        "log2", "sqrt", "0.3", "0.5", "0.7"]
+
+
 def test_meses_en_espanol_y_orden_cronologico():
     assert figuras._mes_espanol("June") == "Jun"
     assert figuras._mes_espanol("Aug") == "Ago"
