@@ -258,9 +258,6 @@ las de la corrida completa.
 
 ## Video de sustentación
 
-Pendiente de publicación. El enlace se agregará cuando esté disponible; este README no
-incluye una URL provisional.
-
 ## Datos y licencia
 
 *Online Shoppers Purchasing Intention Dataset*, C. Sakar y Y. Kastro, UCI Machine Learning
