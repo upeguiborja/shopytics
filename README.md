@@ -7,25 +7,21 @@ Departamento de Ingeniería de Sistemas, Universidad de Antioquia, Colombia
 
 ## Descripción
 
-Clasificación binaria supervisada de la intención de compra sobre el *Online Shoppers
-Purchasing Intention Dataset* (UCI #468, Sakar y Kastro, 2018): 12 330 sesiones de
-navegación, 17 atributos predictores y la etiqueta `Revenue` (15,47 % de compras).
+Clasificación binaria supervisada de la intención de compra en sesiones de navegación en
+línea, sobre el *Online Shoppers Purchasing Intention Dataset* (UCI #468): 12 330 sesiones,
+17 atributos predictores y la etiqueta `Revenue` (15,47 % de compras).
 
-El repositorio contiene el informe completo, que reúne todo lo realizado en el Entregable I
-más lo realizado en el Entregable II. No es el Entregable II por sí solo.
+El repositorio contiene el informe completo, que reúne ambos entregables:
 
-El Entregable II corresponde a las siguientes secciones:
+- **Entregable I:** descripción del problema (contexto, composición de los datos,
+  imputación, codificación y paradigma de aprendizaje) y estado del arte.
+- **Entregable II:** entrenamiento y evaluación de cinco familias de modelos (regresión
+  logística, k-NN, Random Forest, MLP y SVM) con validación y métricas con intervalos de
+  confianza, seguido de análisis de variables, reducción de dimensión (PCA y UMAP) y
+  conclusiones.
 
-- **Sección 1 (30 %):** diseño experimental y resultados del entrenamiento y la evaluación
-  de cinco familias de modelos (regresión logística, k-NN, Random Forest, MLP y SVM), con
-  intervalos de confianza, comparaciones pareadas, análisis de umbral y sensibilidad a
-  `PageValues` y `SpecialDay`.
-- **Sección 2 (20 %):** análisis individual de las 17 variables, redundancia, PCA y UMAP,
-  y comparación del AP con y sin reducción de dimensión.
-
-El flujo es único: `src/ejecutar_todo.py` ejecuta las etapas en orden, escribe los
-artefactos en `resultados/` y alimenta al notebook y al informe LaTeX. El informe se
-compila con `pdflatex`.
+`src/ejecutar_todo.py` ejecuta el flujo completo, escribe los resultados en `resultados/`
+y alimenta el notebook y el informe LaTeX.
 
 ## Estructura del repositorio
 
