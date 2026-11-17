@@ -11,7 +11,10 @@ Clasificación binaria supervisada de la intención de compra sobre el *Online S
 Purchasing Intention Dataset* (UCI #468, Sakar y Kastro, 2018): 12 330 sesiones de
 navegación, 17 atributos predictores y la etiqueta `Revenue` (15,47 % de compras).
 
-El repositorio contiene el Entregable II completo:
+El repositorio contiene el informe completo, que reúne todo lo realizado en el Entregable I
+más lo realizado en el Entregable II. No es el Entregable II por sí solo.
+
+El Entregable II corresponde a las siguientes secciones:
 
 - **Sección 1 (30 %):** diseño experimental y resultados del entrenamiento y la evaluación
   de cinco familias de modelos (regresión logística, k-NN, Random Forest, MLP y SVM), con
