@@ -8,7 +8,7 @@ venv/
 resultados_rapido/
 
 # Documentos fuente del curso (no forman parte del entregable)
-Primera_entrega_modelos_II-2.pdf
+primera_entrega_modelos_II.pdf
 
 # Sistema
 .DS_Store
@@ -29,3 +29,6 @@ desktop.ini
 *.toc
 *.synctex.gz
 compile_*.txt
+
+# PDF generados por LaTeX
+informe_entregable_II_latex/main.pdf
