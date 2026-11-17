@@ -29,6 +29,8 @@ desktop.ini
 
 # Artefactos de LaTeX
 *.aux
+*.bbl
+*.blg
 *.log
 *.out
 *.toc

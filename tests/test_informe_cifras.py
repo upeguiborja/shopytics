@@ -195,3 +195,84 @@ def test_el_pdf_final_no_es_mas_antiguo_que_la_fuente():
     assert pdf.stat().st_mtime >= INFORME.stat().st_mtime - 1, (
         "El PDF de la raíz es más antiguo que main.tex: recompile y cópielo"
     )
+
+
+NOTEBOOK = RAIZ / "notebooks" / "proyecto_intencion_compra.ipynb"
+
+
+def _texto_notebook():
+    if not NOTEBOOK.is_file():
+        pytest.skip("No existe el notebook")
+    celdas = json.loads(NOTEBOOK.read_text(encoding="utf-8"))["cells"]
+    return "\n".join("".join(celda["source"]) for celda in celdas)
+
+
+def _eliminacion_resumen():
+    ruta = RES / "variables" / "eliminacion_resumen.json"
+    if not ruta.is_file():
+        pytest.skip("No existe eliminacion_resumen.json")
+    return json.loads(ruta.read_text(encoding="utf-8"))
+
+
+def _analisis_variables():
+    ruta = RES / "variables" / "analisis_variables.csv"
+    if not ruta.is_file():
+        pytest.skip("No existe analisis_variables.csv")
+    return pd.read_csv(ruta)
+
+
+NUMEROS = {5: "cinco", 6: "seis", 7: "siete", 8: "ocho", 9: "nueve", 10: "diez", 11: "once"}
+
+
+def test_cada_cita_tiene_su_referencia_y_viceversa():
+    informe = _leer(INFORME)
+    citadas = set()
+    for grupo in re.findall(r"\\cite\{([^}]+)\}", informe):
+        citadas.update(clave.strip() for clave in grupo.split(","))
+    declaradas = set(re.findall(r"\\bibitem\{([^}]+)\}", informe))
+    assert citadas - declaradas == set(), f"Citas sin referencia: {citadas - declaradas}"
+    assert declaradas - citadas == set(), f"Referencias sin cita: {declaradas - citadas}"
+    ancho = re.search(r"\\begin\{thebibliography\}\{(\d+)\}", informe)
+    assert ancho and int(ancho.group(1)) >= len(declaradas)
+
+
+def test_numero_de_candidatas_coincide_con_el_resumen():
+    palabra = NUMEROS[len(_eliminacion_resumen()["candidatas"])]
+    informe = _leer(INFORME)
+    assert f"{palabra} variables de menor AUC" in informe
+    assert f"{palabra} candidatas" in informe
+    for nombre, texto in (("informe", informe), ("README", _leer(README)),
+                          ("notebook", _texto_notebook())):
+        for otra in set(NUMEROS.values()) - {palabra}:
+            assert f"{otra} variables de menor AUC" not in texto, (
+                f"El {nombre} dice '{otra} variables de menor AUC'"
+            )
+            assert f"{otra} candidatas" not in texto, f"El {nombre} dice '{otra} candidatas'"
+
+
+def test_conteo_de_variables_sobre_060_coincide_con_el_analisis():
+    tabla = _analisis_variables()
+    palabra = NUMEROS[int((tabla["auc_univariado"] > 0.60).sum())].capitalize()
+    assert f"{palabra} variables superan 0{{,}}60" in _leer(INFORME)
+
+
+def test_deltas_de_eliminacion_con_signo_en_el_informe():
+    resumen = _eliminacion_resumen()
+    informe = _leer(INFORME)
+    for clave in ("delta_AP_validacion_respecto_completo", "delta_AP_CV_respecto_completo"):
+        for modelo in ("RandomForest", "MLP"):
+            valor = resumen[clave][modelo]["sin_redundantes"]
+            signo = "+" if valor > 0 else "-"
+            texto = f"${signo}{abs(valor):.4f}$".replace(".", "{,}")
+            assert texto in informe, f"{clave} de {modelo} ({texto}) no aparece en el informe"
+    for modelo in ("RandomForest", "MLP"):
+        valor = resumen["delta_AP_CV_respecto_completo"][modelo]["sin_candidatas"]
+        signo = "+" if valor > 0 else "-"
+        texto = f"${signo}{abs(valor):.4f}$".replace(".", "{,}")
+        assert texto in informe, f"Delta CV sin candidatas de {modelo} ({texto}) no aparece"
+
+
+def test_no_queda_la_redaccion_antigua_de_la_prueba():
+    for nombre, texto in (("informe", _leer(INFORME)), ("README", _leer(README)),
+                          ("notebook", _texto_notebook())):
+        assert "histórico" not in texto, f"El {nombre} conserva 'histórico'"

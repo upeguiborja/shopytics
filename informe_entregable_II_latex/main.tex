@@ -48,7 +48,7 @@
 	gana la regla de selección con AP de 0{,}7414 en validación y 0{,}7496 en prueba; la
 	MLP alcanza 0{,}7225 y 0{,}7494. La diferencia pareada en prueba es
 	$+0{,}0002$ con IC 95\,\% $[-0{,}0190;0{,}0190]$: no se detecta diferencia entre
-	ambas, lo que no permite afirmar equivalencia. La brecha de Random Forest entre
+	ambas, aunque eso no prueba que sean iguales. La brecha de Random Forest entre
 	entrenamiento y validación queda en 0{,}8284 frente a 0{,}7414. Retirar
 	\textit{PageValues} reduce el AP de validación a 0{,}3345--0{,}3848; retirar
 	\textit{SpecialDay} no produce cambios apreciables. El umbral elegido por F1 sube el
@@ -74,7 +74,7 @@ presupuesto de marketing con mejor criterio. El problema es relevante porque la 
 compra es minoritaria y porque las decisiones de negocio suelen tener costos distintos
 para los falsos positivos y los falsos negativos.
 
-Este trabajo aborda la predicción de la intención de compra como un problema de
+En este trabajo abordamos la predicción de la intención de compra como un problema de
 clasificación binaria supervisada sobre el \textit{Online Shoppers Purchasing Intention
 Dataset} \cite{ref_dataset}. Cada observación es una sesión descrita por 17 atributos de
 navegación, temporales y tecnológicos, y la etiqueta \textit{Revenue} indica si la sesión
@@ -84,15 +84,15 @@ que haya terminado en compra. No se promete una predicción durante la sesión:
 sesión y no está disponible antes del cierre. El escenario sin \textit{PageValues} se
 analiza como prueba de sensibilidad en la Sección~\ref{sec:pagevalues}.
 
-El trabajo tiene cinco aportes. Primero, define un protocolo reproducible en el que la
+En este trabajo hacemos cinco cosas. Primero, seguimos un procedimiento reproducible en el que la
 imputación, la transformación logarítmica, el escalado y la codificación se ajustan dentro
-de cada fold, de modo que no hay fuga de información. Segundo, compara cinco familias con
+de cada fold, para que el modelo no vea información que no debería (fuga). Segundo, comparamos cinco familias con
 mallas amplias bajo una regla de selección fijada antes de observar resultados. Tercero,
-reporta intervalos de confianza para AP, ROC-AUC y F1 en validación cruzada y bootstrap,
+reportamos intervalos de confianza para AP, ROC-AUC y F1 en validación cruzada y bootstrap,
 además de comparaciones pareadas en prueba, en lugar de comparar solo medias puntuales.
-Cuarto, cuantifica el efecto del umbral y de retirar \textit{PageValues} y
-\textit{SpecialDay} en las cinco familias. Quinto, evalúa cada variable por separado,
-prueba la eliminación de candidatas y compara PCA y UMAP con la línea base para determinar
+Cuarto, cuantificamos el efecto del umbral y de retirar \textit{PageValues} y
+\textit{SpecialDay} en las cinco familias. Quinto, evaluamos cada variable por separado,
+probamos la eliminación de candidatas y comparamos PCA y UMAP con la línea base para determinar
 si la señal se conserva al reducir la dimensionalidad.
 
 La Sección~\ref{sec:problema} describe el problema; la Sección~\ref{sec:estado} revisa el
@@ -120,11 +120,11 @@ mover el umbral.
 
 El conjunto contiene 12\,330 sesiones descritas por 18 columnas: 17 atributos predictores
 y la etiqueta binaria \textit{Revenue}. La prevalencia de compra es del 15,47\,\%
-(1\,908 sesiones con compra frente a 10\,422 sin compra), lo que confirma un desbalance
-marcado. La auditoría no encontró valores faltantes y sí 125 filas duplicadas exactas,
+(1\,908 sesiones con compra frente a 10\,422 sin compra), es decir, las clases están
+muy desbalanceadas. La auditoría no encontró valores faltantes y sí 125 filas duplicadas exactas,
 agrupadas en 201 filas; todas son sesiones sin compra y todas tienen
 \textit{BounceRates} igual a 0,2, de modo que son filas idénticas de sesiones de rebote
-que no pueden distinguirse entre sí. Se eliminaron antes de particionar como control de
+que no pueden distinguirse entre sí. Se eliminaron antes de particionar para evitar
 fuga, para que una fila idéntica no apareciera a la vez en entrenamiento y prueba. La decisión reduce el tamaño en 125
 filas (1,0\,\%) y no altera la clase positiva.
 
@@ -140,17 +140,17 @@ Fig.~\ref{fig:datos}(b).
 
 \subsection{Paradigma de aprendizaje}
 
-Se elige aprendizaje supervisado porque la etiqueta está disponible y el objetivo es
-predecir una clase conocida. Dentro de este paradigma se comparan cinco familias que
-cubren un espectro amplio de sesgo y varianza: un modelo lineal regularizado, un método
+Adoptamos el aprendizaje supervisado porque la etiqueta está disponible y el objetivo es
+predecir una clase conocida. Dentro de este paradigma comparamos cinco familias que
+van de modelos simples a modelos más flexibles: un modelo lineal regularizado, un método
 basado en vecinos, un ensamble de árboles, una red neuronal y una máquina de vectores de
-soporte. La reducción de dimensión no sustituye la predicción; se usa para estudiar si la
-señal se conserva con menos variables latentes.
+soporte. La reducción de dimensión no sustituye la predicción; se usa para ver si la
+información útil se conserva con menos dimensiones.
 
-El desbalance aconseja no usar la exactitud como métrica principal. Un clasificador que
+Como las clases están desbalanceadas, no conviene usar la exactitud como métrica principal. Un clasificador que
 siempre prediga la clase mayoritaria supera el 84\,\% de exactitud y no detecta ninguna
 compra. Por eso la métrica principal es el área bajo la curva precisión-recall (AP), que
-resume el compromiso entre precisión y recall en todos los umbrales y es más informativa
+resume el balance entre precisión y recall en todos los umbrales y resulta más útil
 cuando la clase positiva es minoritaria. El ROC-AUC, el F1 y la exactitud balanceada
 complementan el análisis. No se aplica sub ni sobremuestreo; se exploran pesos de clase
 balanceados dentro de la validación cruzada, una alternativa que no genera datos
@@ -159,7 +159,7 @@ sintéticos.
 \section{Estado del arte}
 \label{sec:estado}
 
-La literatura que usa la misma base de datos permite situar los resultados
+Los trabajos previos con la misma base de datos sirven de referencia para los resultados
 (Tabla~\ref{tab:estado}). Los cuatro trabajos son supervisados y parten de la etiqueta
 \textit{Revenue}. Sakar \textit{et al.} \cite{ref_sakar} aplican sobremuestreo y selección de
 variables por correlación, información mutua y máxima relevancia--mínima redundancia (mRMR)
@@ -179,7 +179,7 @@ preprocesamiento se describe antes de la partición y el artículo no reporta in
 desviaciones; además, la prosa llama ``exactitud'' al valor 0,934 que la tabla rotula como
 precisión. En Sakar, la fuente primaria es de acceso cerrado: la cifra principal se
 corrobora en un trabajo revisado por pares que lo cita, pero el protocolo detallado no
-pudo verificarse. De ahí tres decisiones de este trabajo: ajustar todo el preprocesamiento
+pudo verificarse. De ahí tomamos tres decisiones: ajustar todo el preprocesamiento
 dentro de los folds, privilegiar AP, ROC-AUC y F1 frente a la exactitud, y reportar
 incertidumbre y comparaciones pareadas, que los antecedentes no incluyen.
 
@@ -213,7 +213,7 @@ transformación $\log(1+x)$ admite ceros y reduce la asimetría; la decisión de
 selecciona por validación cruzada. Las nominales (\textit{Month}, \textit{OperatingSystems},
 \textit{Browser}, \textit{Region}, \textit{TrafficType} y \textit{VisitorType}) se codifican
 con one-hot: aunque cuatro de ellas son enteras, sus valores son códigos sin orden y
-tratarlas como números introduciría una distancia artificial. \textit{Weekend} pasa directo
+tratarlas como números haría creer al modelo que unas categorías están más cerca que otras. \textit{Weekend} pasa directo
 como 0/1 y \textit{SpecialDay} se estandariza.
 
 \begin{table*}[t]
@@ -294,7 +294,7 @@ Total & 12\,205 & 1\,908 & 10\,297 & 15,63\,\% \\
 \end{tabular}
 \end{table}
 
-Todo el preprocesamiento se encapsuló en un \texttt{Pipeline} y un
+Todo el preprocesamiento se organizó en un \texttt{Pipeline} y un
 \texttt{ColumnTransformer}: imputación, transformación logarítmica, escalado y
 codificación se aprenden únicamente con los datos de entrenamiento de cada fold. No se
 aplicó sub ni sobremuestreo; los pesos de clase balanceados se exploraron como
@@ -309,8 +309,8 @@ aprendizaje y la arquitectura de la MLP. La malla de SVM se separó en dos búsq
 para el kernel lineal y otra para el RBF, porque $\gamma$ solo aplica al RBF; así se evitan
 combinaciones duplicadas. En total se evaluaron 730 combinaciones: 20 de regresión
 logística, 56 de k-NN, 280 de Random Forest, 250 de MLP y 124 de SVM (24 lineales y 100
-RBF). Para Random Forest no se explora $\log(1+x)$: la transformación es monótona y no
-altera las particiones de un árbol, de modo que solo duplicaría candidatos.
+RBF). Para Random Forest no se explora $\log(1+x)$: la transformación no cambia el orden de los valores y por eso no
+altera las divisiones de un árbol, de modo que solo duplicaría candidatos.
 
 \begin{table*}[t]
 \centering
@@ -344,8 +344,8 @@ el mayor AP de validación de los tres (0{,}7414 frente a 0{,}7352 y 0{,}7392). 
 mejor de la validación cruzada usa $\alpha=0{,}01$, interior, y la elegida usa
 $\alpha=0{,}1$, el extremo superior, con AP de validación 0{,}7225 frente a 0{,}7119 y
 0{,}6747. Las diferencias entre esos
-candidatos son una zona plana: no se amplió la malla otra vez porque sería perseguir
-ruido, y los extremos elegidos se documentan como tales.
+candidatos son muy pequeñas: no se amplió la malla otra vez porque las mejoras serían
+solo ruido, y los extremos elegidos se dejan documentados.
 
 \subsection{Métricas e intervalos}
 
@@ -365,14 +365,14 @@ positivo nulo.
 
 Los intervalos son del 95\,\%. En validación cruzada, el curso usa media $\pm$ desviación
 estándar entre folds; aquí se adopta la aproximación $t$,
-$\bar{x}\pm t_{0{,}975,\,4}\,s/\sqrt{5}$, con desviación muestral, porque corrige el sesgo de
-la desviación con cinco folds. En las particiones se usa bootstrap estratificado con 2\,000
+$\bar{x}\pm t_{0{,}975,\,4}\,s/\sqrt{5}$, con desviación muestral, porque tiene en cuenta que
+solo hay cinco folds. En las particiones se usa bootstrap estratificado con 2\,000
 réplicas y se toman los percentiles 2{,}5 y 97{,}5 de la distribución remuestreada
 \cite{ref_efron}. Las comparaciones pareadas remuestrean por separado ambas clases,
 calculan la métrica de los dos modelos sobre la misma réplica y registran la diferencia;
-este diseño condiciona a modelos, predicciones y umbrales fijos y no
+este cálculo deja fijos los modelos, las predicciones y los umbrales, así que no
 incluye la variabilidad del entrenamiento ni de la selección. Un intervalo que incluye cero
-no permite afirmar equivalencia.
+indica que no se encontró diferencia, no que los modelos sean iguales.
 
 \section{Resultados}
 \label{sec:resultados}
@@ -403,9 +403,9 @@ validación cruzada ($\alpha=0{,}01$) es interior. En SVM, $C=1$ y $C=10$ son lo
 kernel RBF (0,6733 y 0,6658) y $C=100$ el peor (0,6409). En k-NN, el AP se estabiliza en
 torno a 0,65 desde $k=61$, y en regresión logística $C=0{,}1$ obtiene 0,6629.
 
-El AP de entrenamiento confirma el sobreajuste esperado. k-NN alcanza 1,0000 porque con
+El AP de entrenamiento muestra algo de sobreajuste, como se esperaba. k-NN alcanza 1,0000 porque con
 \textit{weights}=distance cada punto se encuentra a sí mismo a distancia cero; es un
-artefacto, no sobreajuste. Random Forest pasa de 0{,}8284 en entrenamiento a 0{,}7414 en
+efecto del cálculo, no sobreajuste. Random Forest pasa de 0{,}8284 en entrenamiento a 0{,}7414 en
 validación, la MLP de 0{,}7798 a 0{,}7225, SVM de 0{,}7986 a 0{,}7054 y la regresión
 logística de 0{,}6987 a 0{,}6841. La brecha de la regresión logística es la más estrecha;
 la de Random Forest, la más amplia.
@@ -485,13 +485,13 @@ $[0{,}0130;0{,}0382]$. En cambio, Random Forest y la MLP no se distinguen: AP
 $+0{,}0002$ con IC $[-0{,}0190;0{,}0190]$ y ROC-AUC $+0{,}0018$ con IC
 $[-0{,}0036;0{,}0075]$. Tampoco se distinguen k-NN y la regresión logística en AP
 ($+0{,}0019$, IC $[-0{,}0272;0{,}0298]$) ni SVM y k-NN en ROC-AUC ($-0{,}0041$, IC
-$[-0{,}0200;0{,}0102]$). Random Forest y la MLP forman el grupo de finalistas; SVM queda
-un escalón por debajo y k-NN y la regresión logística cierran la comparación.
+$[-0{,}0200;0{,}0102]$). Random Forest y la MLP son los dos mejores modelos; SVM queda
+un poco por debajo y k-NN y la regresión logística ocupan los últimos lugares.
 
 Con el umbral nativo, Random Forest acierta 1\,981 de 2\,059 sesiones sin compra y 227 de
 382 compras, con 155 falsos negativos y 78 falsos positivos. La MLP acierta 224 compras y
-1\,970 sesiones sin compra. El perfil de Random Forest es más conservador; el de la MLP
-recupera más compras a costa de más falsos positivos.
+1\,970 sesiones sin compra. Los dos modelos se comportan de forma muy parecida; Random Forest
+acierta un poco más en ambas clases.
 
 \subsection{Umbral de decisión}
 
@@ -526,7 +526,7 @@ pasa de 0{,}6608 a 0{,}6904 y el recall de 0{,}5942 a 0{,}7356, a costa de bajar
 precisión de 0{,}7443 a 0{,}6505. En la MLP, el F1 pasa de 0{,}6446 a 0{,}6746 y el recall
 de 0{,}5864 a 0{,}6675. El umbral no debe fijarse solo por F1: si el costo de un falso
 positivo es alto conviene un umbral más conservador, y si el costo de perder una compra es
-alto conviene el umbral ajustado. Se reportan ambos para hacer explícito el compromiso.
+alto conviene el umbral ajustado. Se reportan ambos para que se vea qué se gana y qué se pierde.
 
 \subsection{Sensibilidad a \textit{PageValues}}
 \label{sec:pagevalues}
@@ -537,7 +537,7 @@ escenario sin la variable. Al retirarla, el AP cae en todas las familias: Random
 pasa de 0{,}7414 a 0{,}3848, la MLP de 0{,}7225 a 0{,}3532, SVM de 0{,}7054 a 0{,}3403,
 k-NN de 0{,}7018 a 0{,}3477 y la regresión logística de 0{,}6841 a 0{,}3345. El ROC-AUC
 sin \textit{PageValues} también cae, pero se mantiene entre 0{,}7615 y 0{,}7847, lo que
-indica que las demás variables conservan capacidad de ordenamiento. La conclusión es que
+indica que las demás variables todavía ayudan a ordenar las sesiones. La conclusión es que
 \textit{PageValues} domina el desempeño y que cualquier uso operativo antes del cierre de
 la sesión debe asumir una pérdida grande de AP.
 
@@ -569,8 +569,8 @@ La Tabla~\ref{tab:specialday} resume dos experimentos. En la ablación, retirar
 (MLP), $+0{,}0014$ (SVM), $-0{,}0048$ (k-NN) y $-0{,}0004$ (regresión logística). Los
 valores cercanos a cero y algunos negativos indican que el AP sin la variable es
 ligeramente mayor: la variable no aporta. En la comparación de codificación, la variante
-one-hot no mejora de forma consistente ni en validación cruzada ni en validación. La
-equivalencia algebraica entre las codificaciones numérica y ordinal estandarizadas explica
+one-hot no mejora de forma consistente ni en validación cruzada ni en validación. Las
+codificaciones numérica y ordinal, una vez estandarizadas, contienen la misma información, y eso explica
 por qué ambas se comportan igual; el experimento confirma que pasar a one-hot no cambia la
 conclusión.
 
@@ -612,8 +612,8 @@ Regresión logística & $+0{,}0011$ & $-0{,}0006$ \\
 \section{Análisis individual y reducción de dimensión}
 \label{sec:reduccion}
 
-Esta sección evalúa cada atributo por separado, prueba la eliminación de candidatas y
-aplica PCA y UMAP sobre la matriz preprocesada. Todo el análisis se ajusta con el 60\,\% de
+En esta sección evaluamos cada atributo por separado, probamos la eliminación de candidatas y
+aplicamos PCA y UMAP sobre la matriz preprocesada. Todo el análisis se ajusta con el 60\,\% de
 entrenamiento y se evalúa en validación; la reducción se encapsula en el
 \texttt{Pipeline}. Tras el one-hot y la estandarización, la matriz tiene 73 columnas.
 
@@ -625,7 +625,7 @@ univariado. Para las categóricas se usó la V de Cramér,
 $V=\sqrt{\chi^2/(n\,\min(r-1,k-1))}$, con $\chi^2$ de la tabla de contingencia, $n$ el
 número de sesiones y $r$ y $k$ el número de filas y columnas, y un AUC obtenido con una
 regresión logística sobre su codificación one-hot, estimado con \textit{cross\_val\_predict}
-y cinco folds dentro de entrenamiento, de modo que ya no es una medida in-sample. En ambos
+y cinco folds dentro de entrenamiento, de modo que no se mide con los mismos datos del ajuste. En ambos
 casos se añadió la información mutua con la etiqueta. La
 Tabla~\ref{tab:variables-individuales} ordena las 17 variables por AUC y la
 Fig.~\ref{fig:variables} muestra las diez primeras.
@@ -693,7 +693,7 @@ seis no superan 0{,}55; estas últimas son las candidatas a eliminación. El ín
 de las numéricas confirma las dos primeras (0{,}478 y 0{,}275) y deja a las demás por
 debajo de 0{,}14; solo difiere del AUC en el orden intermedio, donde \textit{BounceRates}
 sube al tercer lugar (0{,}138).
-\textit{Weekend} es indistinguible de una asignación aleatoria (0{,}504).
+\textit{Weekend} casi no se diferencia de adivinar al azar (0{,}504).
 
 \subsection{Redundancia y eliminación de variables}
 
@@ -753,11 +753,11 @@ AP y UMAP más del doble; UMAP de dos dimensiones es la peor variante en ambas f
 Las Figs.~\ref{fig:reduccion} y \ref{fig:umap} resumen el barrido y la proyección: la
 primera traza la varianza acumulada de PCA, el AP de validación frente a los componentes y
 frente a la dimensión de UMAP, con la variante elegida marcada; la segunda proyecta las
-sesiones de prueba en dos dimensiones. La señal útil está dispersa en las variables
-originales y las transformaciones no supervisadas no la concentran. La MLP tolera mejor PCA
-porque su capa oculta ya impone una compresión, y en su caso la pérdida no es detectable; en
-Random Forest, en cambio, PCA y UMAP cuestan AP de forma clara. Reducir dimensiones no
-simplifica sin costo: la base se mantiene para el modelo final y PCA y UMAP quedan como
+sesiones de prueba en dos dimensiones. La información útil está repartida en las variables
+originales y estas transformaciones, que no usan la etiqueta, no logran concentrarla. La MLP tolera mejor PCA,
+posiblemente porque su capa oculta ya comprime los datos, y en su caso la pérdida no se alcanza a detectar; en
+Random Forest, en cambio, PCA y UMAP cuestan AP de forma clara. Reducir dimensiones tiene
+un costo: la base se mantiene para el modelo final y PCA y UMAP quedan como
 análisis de sensibilidad.
 
 \begin{table*}[!t]
@@ -819,12 +819,12 @@ selección de transformaciones ajustados dentro de los folds. Random Forest gan�
 selección con AP de 0{,}7414 en validación y 0{,}7496 en prueba. La MLP quedó segunda en
 validación (0{,}7225) y prácticamente empatada en prueba (0{,}7494). Las comparaciones
 pareadas en prueba no detectan diferencia entre ambas en AP ($+0{,}0002$, IC
-$[-0{,}0190;0{,}0190]$) ni en ROC-AUC ($+0{,}0018$, IC $[-0{,}0036;0{,}0075]$). La elección entre ambas debe hacerse por criterios operativos:
-interpretabilidad, costo de cómputo, calibración y perfil de errores. La brecha de
+$[-0{,}0190;0{,}0190]$) ni en ROC-AUC ($+0{,}0018$, IC $[-0{,}0036;0{,}0075]$). Para elegir entre ambas conviene mirar criterios prácticos:
+facilidad de interpretación, costo de cómputo, calibración y tipo de errores. La brecha de
 Random Forest entre entrenamiento (0{,}8284) y validación (0{,}7414) es la más amplia
 de las cinco familias.
 
-El umbral de decisión es una decisión de negocio. Con el umbral nativo, Random Forest
+El umbral de decisión depende de lo que le convenga al negocio. Con el umbral nativo, Random Forest
 privilegia la precisión y deja escapar cuatro de cada diez compras (recall 0{,}594). Con el
 umbral ajustado por F1 en validación, el recall sube a 0{,}736 y el F1 a 0{,}690, a costa
 de bajar la precisión a 0{,}651.
@@ -833,36 +833,36 @@ de bajar la precisión a 0{,}651.
 el AP de validación queda entre 0{,}33 y 0{,}38, una caída de 0{,}35 a 0{,}37, muy por
 encima del efecto de cualquier hiperparámetro. \textit{ExitRates} y las variables de producto le siguen, mientras que
 \textit{Weekend}, \textit{Region}, \textit{Browser}, \textit{VisitorType},
-\textit{SpecialDay} y \textit{OperatingSystems} aportan poco. Esto delimita el alcance: el modelo sirve para analizar
+\textit{SpecialDay} y \textit{OperatingSystems} aportan poco. Esto marca el alcance: el modelo sirve para analizar
 sesiones cerradas y priorizar acciones posteriores, no para decidir durante la sesión. Un
 sistema en tiempo real tendría que operar sin \textit{PageValues} y asumir la pérdida de AP
 documentada en la Tabla~\ref{tab:pagevalues}.
 
 ¿Es posible reducir la complejidad del modelo final? Sí, en dos sentidos. En variables,
 quitar las seis candidatas no deteriora el AP y simplifica el modelo; no conviene, en
-cambio, quitar las redundantes. En dimensión, PCA conserva buena parte de la señal: con 10
+cambio, quitar las redundantes. En dimensión, PCA conserva buena parte de la información: con 10
 componentes en Random Forest el AP de prueba cae 0{,}0260 y con 15 en la MLP la caída no se
 distingue de cero. UMAP, en cambio, degrada el desempeño de forma marcada en ambas familias;
 para este problema sirve para visualizar, no para modelar. Un modelo final razonable es
 Random Forest con las seis candidatas retiradas, sin reducción de dimensión, y un umbral
 elegido según el costo relativo de los errores.
 
-El trabajo tiene limitaciones. Usa una sola base de datos y una sola semilla, con
+Nuestro trabajo tiene limitaciones. Usamos una sola base de datos y una sola semilla, con
 particiones estratificadas pero no temporales; faltan enero y abril y el AP de validación
 por mes varía entre 0,57 y 0,88, con estimaciones ruidosas en los meses de menos de 100
-sesiones, de modo que no se evaluó la deriva entre periodos. La prueba no participó en
+sesiones, de modo que no se evaluó si el comportamiento cambia entre periodos. La prueba no participó en
 ninguna decisión de esta versión, pero sus métricas se conocían de una primera versión del
 trabajo: se leen como descriptivas y no como una evaluación independiente. Los intervalos
-bootstrap son condicionales a modelos y predicciones fijos y no incluyen la variabilidad
+bootstrap se calculan con modelos y predicciones fijos y no incluyen la variabilidad
 del entrenamiento. Las numéricas se estandarizaron y las indicadoras 0/1 quedaron sin
 escalar antes de PCA y UMAP; no se calibraron probabilidades y el umbral se eligió por F1
 y no por un análisis formal de costo-beneficio. La clase positiva tiene 1\,908 casos, lo que limita la precisión de los
-intervalos, y UMAP añade variabilidad por su inicialización. Como trabajo futuro se
-propone validación temporal, calibración, umbrales sensibles al costo y repetición con
+intervalos, y UMAP añade variabilidad por su inicialización. Como trabajo futuro
+proponemos validación temporal, calibración, umbrales sensibles al costo y repetición con
 otras semillas.
 
-En síntesis, el protocolo ajusta el preprocesamiento en entrenamiento, reporta
-incertidumbre y distingue ranking de decisión. Random Forest y la MLP son los finalistas,
+En resumen, ajustamos el preprocesamiento solo con entrenamiento, reportamos
+intervalos y separamos la capacidad de ordenar de la decisión con umbral. Random Forest y la MLP son los finalistas,
 sin diferencia detectada en prueba; \textit{PageValues} explica la mayor parte del
 desempeño, el umbral ajustado mejora el recall a cambio de precisión, y el modelo puede
 simplificarse retirando las variables de menor AUC.
