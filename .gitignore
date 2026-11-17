@@ -7,18 +7,10 @@ __pycache__/
 venv/
 resultados_rapido/
 
-# Artefactos de conversion de los PDF del curso
-* conv.html
-* conv.txt
-
 # Documentos fuente del curso (no forman parte del entregable)
-guia_proyecto_del_curso_202602.pdf
-Guía Entregable I – Predicción de la intención de compra (UCI #468).pdf
 Primera_entrega_modelos_II-2.pdf
-Primera_entrega_modelos_II/
 
 # Sistema
-Thumbs.db
 .DS_Store
 desktop.ini
 
@@ -37,10 +29,3 @@ desktop.ini
 *.toc
 *.synctex.gz
 compile_*.txt
-
-# Documentos de trabajo y revision
-Feedback docente entregable I.txt
-G10 · Revisión del entregable final (Shopytics).xlsx
-Enlace overleaf.txt
-
-informe_entregable_II_latex/main.pdf
