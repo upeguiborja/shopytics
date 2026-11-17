@@ -223,8 +223,8 @@ Fuente: `resultados/evaluacion_familias/metricas.csv`.
   0,6904, con recall 0,7356 y precisión 0,6505. Fuente: `umbrales.csv` y
   `metricas_test_umbral.csv`.
 - Retirar `PageValues` reduce el AP de validación entre 0,3345 y 0,3848 según la familia,
-  una caída de 0,35 a 0,37 frente al 0,7414 del modelo completo. Fuentes:
-  `comparacion_pagevalues.csv` y `resumen.json`.
+  una caída de 0,35 a 0,37 frente al 0,7414 del modelo completo. Fuente:
+  `comparacion_pagevalues.csv`.
 - La ablación de `SpecialDay` es marginal: el AP de validación pasa de 0,7414 a 0,7418
   (Δ = −0,0004). Fuente: `specialday_ablacion.csv`.
 - Las candidatas a eliminación salen del propio análisis: las seis variables con AUC
@@ -252,8 +252,7 @@ evaluación independiente. Las decisiones de búsqueda y selección se tomaron s
 prueba. Los intervalos bootstrap son
 condicionales a los modelos y las predicciones fijos, y no incorporan la variabilidad del
 entrenamiento ni de la selección del umbral. La ausencia de diferencia significativa entre
-Random Forest y MLP no demuestra equivalencia; solo indica que no hay evidencia de
-diferencia con la potencia disponible. Las cifras de `--rapido` tampoco son comparables con
+Random Forest y MLP no demuestra equivalencia. Las cifras de `--rapido` tampoco son comparables con
 las de la corrida completa.
 
 ## Video de sustentación
