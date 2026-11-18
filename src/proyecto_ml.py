@@ -232,7 +232,7 @@ class TransformadorUMAP(BaseEstimator, TransformerMixin):
             import umap
         except ImportError as exc:
             raise ImportError(
-                "Instale umap-learn para usar TransformadorUMAP: pip install umap-learn"
+                "Instale umap-learn para usar TransformadorUMAP: uv sync --locked"
             ) from exc
         self.modelo_ = umap.UMAP(
             n_components=self.n_components,

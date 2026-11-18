@@ -53,7 +53,8 @@ y alimenta el notebook y el informe LaTeX.
 │   ├── main.tex                             # fuente del informe IEEE
 │   ├── IEEEtran.cls
 │   └── figuras/
-├── requirements.txt
+├── pyproject.toml
+├── uv.lock
 └── README.md
 ```
 
@@ -63,40 +64,22 @@ parte de este flujo.
 
 ## Instalación
 
-Las versiones exactas de las dependencias están en `requirements.txt`. La reproducibilidad
-documentada se verificó con Python 3.13.5.
+Desde la raíz del proyecto, ejecute el siguiente comando con uv para crear `.venv`
+con Python 3.13.5 e instalar las versiones fijadas en `uv.lock`, incluido pytest.
 
 ```bash
-python -m venv .venv
-```
-
-Windows:
-
-```powershell
-.venv\Scripts\activate
-```
-
-Linux o macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Instalación de dependencias:
-
-```bash
-python -m pip install -r requirements.txt
+uv sync --locked
 ```
 
 Para compilar el informe se necesita una distribución de TeX con `pdflatex` (TeX Live,
-MiKTeX o MacTeX). No se instala con `pip`.
+MiKTeX o MacTeX).
 
 ## Flujo único
 
 La ejecución completa se lanza desde la raíz del proyecto:
 
 ```bash
-python src/ejecutar_todo.py
+uv run python src/ejecutar_todo.py
 ```
 
 Las etapas se ejecutan en este orden y cada una consume las salidas de las anteriores:
@@ -124,10 +107,10 @@ las figuras. Los valores admitidos son `datos`, `busqueda`, `evaluacion`, `sensi
 `specialday`, `variables`, `reduccion` y `figuras`.
 
 ```bash
-python src/ejecutar_todo.py --desde evaluacion
-python src/ejecutar_todo.py --desde reduccion
-python src/ejecutar_todo.py --desde figuras
-python src/ejecutar_todo.py --desde datos --hasta datos
+uv run python src/ejecutar_todo.py --desde evaluacion
+uv run python src/ejecutar_todo.py --desde reduccion
+uv run python src/ejecutar_todo.py --desde figuras
+uv run python src/ejecutar_todo.py --desde datos --hasta datos
 ```
 
 Antes de usar `--desde`, compruebe que los archivos de las etapas previas existan en la
@@ -137,7 +120,7 @@ y de los resultados de `evaluacion`; `figuras` depende de todas las anteriores.
 ### Prueba de humo
 
 ```bash
-python src/ejecutar_todo.py --rapido
+uv run python src/ejecutar_todo.py --rapido
 ```
 
 `--rapido` reduce folds, tamaño de muestra y réplicas bootstrap, y escribe en
@@ -159,7 +142,7 @@ ahorrar tiempo, ejecute por etapas con `--desde` y conserve `resultados/` entre 
 La suite usa `pytest` y no entrena la rejilla completa:
 
 ```bash
-python -m pytest -q
+uv run python -m pytest -q
 ```
 
 Las pruebas de integridad comprueban dimensiones, particiones, ausencia de fuga, mallas,
@@ -175,7 +158,7 @@ establece `RECALCULAR = True`, llama a `ejecutar_todo.main()` y ejecuta el flujo
 Para ejecutarlo y guardar una copia ejecutada:
 
 ```bash
-jupyter nbconvert --to notebook --execute notebooks/proyecto_intencion_compra.ipynb --output-dir notebooks --output proyecto_intencion_compra_ejecutado.ipynb
+uv run jupyter nbconvert --to notebook --execute notebooks/proyecto_intencion_compra.ipynb --output-dir notebooks --output proyecto_intencion_compra_ejecutado.ipynb
 ```
 
 El notebook debe abrirse desde `notebooks/` o desde la raíz del proyecto; rechaza otros
