@@ -270,12 +270,13 @@ def test_generar_figuras_escribe_seis_de_informe_y_seis_de_notebook(tmp_path):
     resultados = _resultados_sinteticos(tmp_path / "resultados")
     informe = tmp_path / "informe"
     rutas = figuras.generar_figuras(resultados, figuras_informe=informe, rapido=True)
-    assert len(rutas["informe"]) == 6
+    assert len(rutas["informe"]) == 7
     assert len(rutas["notebook"]) == 6
     for ruta in rutas["informe"] + rutas["notebook"]:
         assert ruta.is_file()
         assert ruta.stat().st_size > 1000
     assert (informe / "fig01_clases_cobertura.png").is_file()
+    assert (informe / "fig07_matrices_confusion.png").is_file()
     assert (resultados / "figuras" / "nb06_comparacion_reduccion.png").is_file()
 
 

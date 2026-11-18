@@ -705,13 +705,22 @@ def figura_train_validacion(metricas: pd.DataFrame, destino: Path, dpi: int = 20
     return _guardar(fig, destino, dpi)
 
 
-def figura_matrices_confusion(matrices: dict, destino: Path, dpi: int = 200) -> Path:
-    modelos = [m for m in MODELOS if m in matrices and "test" in matrices[m]]
+def figura_matrices_confusion(matrices: dict, destino: Path, dpi: int = 200,
+                              modelos=None, ancho_por_modelo: float = 2.64,
+                              alto_por_fila: float = 2.7, titulo: bool = True) -> Path:
+    """Matrices de confusión en prueba, con umbral nativo y, si existe, umbral F1.
+
+    ``modelos`` limita las familias mostradas (por defecto, todas). El informe usa una
+    versión de una columna con Random Forest y la MLP, sin título general.
+    """
+    candidatos = MODELOS if modelos is None else list(modelos)
+    modelos = [m for m in candidatos if m in matrices and "test" in matrices[m]]
     if not modelos:
         raise ValueError("matrices.json no contiene matrices de prueba")
     tiene_umbral = all("test_umbral_f1_validacion" in matrices[m] for m in modelos)
     filas = 2 if tiene_umbral else 1
-    fig, ejes = plt.subplots(filas, len(modelos), figsize=(13.2, 2.7 * filas),
+    fig, ejes = plt.subplots(filas, len(modelos),
+                             figsize=(ancho_por_modelo * len(modelos), alto_por_fila * filas),
                              squeeze=False)
     for indice, modelo in enumerate(modelos):
         capas = [("test", "Umbral nativo")]
@@ -731,11 +740,12 @@ def figura_matrices_confusion(matrices: dict, destino: Path, dpi: int = 200) -> 
             eje.set_yticks([0, 1])
             eje.set_xticklabels(["No", "Sí"], fontsize=7)
             eje.set_yticklabels(["No", "Sí"], fontsize=7)
-            eje.set_xlabel("Predicción")
+            eje.set_xlabel("Predicción" if fila == filas - 1 else "")
             eje.set_ylabel("Real" if indice == 0 else "")
             eje.set_title(f"{_etiqueta_modelo(modelo)}\n({titulo_umbral})" if fila == 0
                           else titulo_umbral, fontsize=8)
-    fig.suptitle("Matrices de confusión en prueba", fontsize=9.5)
+    if titulo:
+        fig.suptitle("Matrices de confusión en prueba", fontsize=9.5)
     fig.tight_layout()
     return _guardar(fig, destino, dpi)
 
@@ -1003,6 +1013,10 @@ def generar_figuras(resultados=DIR_RES, figuras_informe=None, rapido: bool = Fal
         figuras_informe / "fig05_reduccion.png", dpi))
     rutas["informe"].append(figura_umap(
         umap_2d, figuras_informe / "fig06_umap_2d.png", dpi))
+    rutas["informe"].append(figura_matrices_confusion(
+        matrices, figuras_informe / "fig07_matrices_confusion.png", dpi,
+        modelos=("RandomForest", "MLP"), ancho_por_modelo=1.75, alto_por_fila=1.65,
+        titulo=False))
 
     rutas["notebook"].append(figura_train_validacion(
         metricas, figuras_notebook / "nb01_train_vs_validacion.png", dpi))
