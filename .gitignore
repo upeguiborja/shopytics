@@ -17,18 +17,5 @@ desktop.ini
 # Archivos temporales de Word
 ~$*
 
-# Artefactos de LaTeX
-*.aux
-*.bbl
-*.blg
-*.log
-*.out
-*.toc
-*.synctex.gz
-compile_*.txt
-
-# PDF generados por LaTeX
-informe_entregable_II_latex/main.pdf
-
 # Configuración local de mise
 /mise.toml

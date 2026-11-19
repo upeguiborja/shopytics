@@ -11,7 +11,7 @@ Clasificación binaria supervisada de la intención de compra en sesiones de nav
 línea, sobre el *Online Shoppers Purchasing Intention Dataset* (UCI #468): 12 330 sesiones,
 17 atributos predictores y la etiqueta `Revenue` (15,47 % de compras).
 
-## Informe
+## Notebooks
 
 Los tres notebooks incluyen las tablas, figuras y conclusiones de la ejecución guardada. Se pueden leer en orden sin entrenar modelos.
 
@@ -21,9 +21,7 @@ Los tres notebooks incluyen las tablas, figuras y conclusiones de la ejecución 
 | [02 · Entrenamiento y ablación](notebooks/02_entrenamiento_y_ablacion.ipynb) | Compara cinco familias con validación cruzada, evalúa los tres finalistas de cada familia en validación y mide el efecto de retirar variables. |
 | [03 · Evaluación final, sensibilidad y reducción](notebooks/03_evaluacion_sensibilidad_y_reduccion.ipynb) | Calcula métricas, intervalos y comparaciones pareadas. Evalúa los umbrales, la sensibilidad a `PageValues` y `SpecialDay`, y la reducción con PCA y UMAP. |
 
-El [PDF de la entrega anterior](informe_entregable_II.pdf) y su fuente LaTeX se conservan para consulta.
-
-## Reproducir el informe
+## Reproducir los resultados
 
 Desde la raíz del repositorio, instale el entorno con Python 3.13.5 y las dependencias fijadas en `uv.lock`. La ejecución utiliza el paquete local `shopytics`.
 
@@ -34,7 +32,7 @@ uv run jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor
 
 El comando ejecuta 01, 02 y 03 en ese orden y actualiza sus salidas en el repositorio. Para ejecutar las celdas de forma interactiva, abra los notebooks con `uv run jupyter lab`.
 
-| Carpeta | Archivos que produce o utiliza el informe |
+| Carpeta | Archivos que producen o utilizan los notebooks |
 |---|---|
 | `data/` | CSV original, datos deduplicados y particiones en pickle. El 02 guarda además las matrices codificadas y ajusta el preprocesador dentro de cada pliegue para validación cruzada. |
 | `resultados/variables/` | El 01 guarda el análisis individual y los pares de variables redundantes en JSON. El 02 los usa para elegir las ablaciones. |
