@@ -1,0 +1,296 @@
+[
+  {
+    "AP": 0.3344895071533118,
+    "ROC_AUC": 0.7615829574701221,
+    "precision": 0.2857142857142857,
+    "recall": 0.015748031496062992,
+    "F1": 0.029850746268656716,
+    "balanced_accuracy": 0.5042332390490024,
+    "accuracy": 0.8402294141745187,
+    "modelo": "Regresion_logistica",
+    "rango_cv": 1,
+    "AP_CV": 0.34930029502299126,
+    "std_CV": 0.022576025256984378,
+    "params": {
+      "clf__C": 0.1,
+      "clf__class_weight": null,
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.3300082398811239,
+    "ROC_AUC": 0.7577567973906174,
+    "precision": 0.45161290322580644,
+    "recall": 0.03674540682414698,
+    "F1": 0.06796116504854369,
+    "balanced_accuracy": 0.5142464898198404,
+    "accuracy": 0.8426874231872183,
+    "modelo": "Regresion_logistica",
+    "rango_cv": 2,
+    "AP_CV": 0.3465453604377582,
+    "std_CV": 0.02660358079916408,
+    "params": {
+      "clf__C": 1,
+      "clf__class_weight": null,
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.3278948082768207,
+    "ROC_AUC": 0.7546530591443059,
+    "precision": 0.4375,
+    "recall": 0.03674540682414698,
+    "F1": 0.06779661016949153,
+    "balanced_accuracy": 0.5140037713732386,
+    "accuracy": 0.842277755018435,
+    "modelo": "Regresion_logistica",
+    "rango_cv": 3,
+    "AP_CV": 0.3441761170153461,
+    "std_CV": 0.02863112954238174,
+    "params": {
+      "clf__C": 100,
+      "clf__class_weight": null,
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.3410935782645507,
+    "ROC_AUC": 0.7564387279259995,
+    "precision": 0.6666666666666666,
+    "recall": 0.005249343832020997,
+    "F1": 0.010416666666666666,
+    "balanced_accuracy": 0.5023819534694085,
+    "accuracy": 0.8443260958623515,
+    "modelo": "kNN",
+    "rango_cv": 1,
+    "AP_CV": 0.34017968581735364,
+    "std_CV": 0.02319966477674567,
+    "params": {
+      "clf__n_neighbors": 81,
+      "clf__p": 1,
+      "clf__weights": "distance",
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.34774152978249706,
+    "ROC_AUC": 0.7615179777285122,
+    "precision": 0.0,
+    "recall": 0.0,
+    "F1": 0.0,
+    "balanced_accuracy": 0.49975728155339805,
+    "accuracy": 0.8435067595247849,
+    "modelo": "kNN",
+    "rango_cv": 2,
+    "AP_CV": 0.33622826536630973,
+    "std_CV": 0.019432959349336736,
+    "params": {
+      "clf__n_neighbors": 101,
+      "clf__p": 1,
+      "clf__weights": "distance",
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.33749010725854633,
+    "ROC_AUC": 0.7501452488341872,
+    "precision": 0.3333333333333333,
+    "recall": 0.005249343832020997,
+    "F1": 0.0103359173126615,
+    "balanced_accuracy": 0.5016537981296028,
+    "accuracy": 0.8430970913560016,
+    "modelo": "kNN",
+    "rango_cv": 3,
+    "AP_CV": 0.3343469411656693,
+    "std_CV": 0.024248055011928595,
+    "params": {
+      "clf__n_neighbors": 61,
+      "clf__p": 1,
+      "clf__weights": "distance",
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.38482421180237547,
+    "ROC_AUC": 0.784683892668756,
+    "precision": 0.3842887473460722,
+    "recall": 0.47506561679790027,
+    "F1": 0.42488262910798125,
+    "balanced_accuracy": 0.667144458884387,
+    "accuracy": 0.7992625972961901,
+    "modelo": "RandomForest",
+    "rango_cv": 1,
+    "AP_CV": 0.38830962056131735,
+    "std_CV": 0.03645496580346483,
+    "params": {
+      "clf__class_weight": "balanced",
+      "clf__max_depth": null,
+      "clf__max_features": "sqrt",
+      "clf__min_samples_leaf": 5,
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.3830883286667933,
+    "ROC_AUC": 0.7858726397064444,
+    "precision": 0.3788706739526412,
+    "recall": 0.5459317585301837,
+    "F1": 0.44731182795698926,
+    "balanced_accuracy": 0.6901988889738297,
+    "accuracy": 0.7894305612453912,
+    "modelo": "RandomForest",
+    "rango_cv": 2,
+    "AP_CV": 0.3882548070446926,
+    "std_CV": 0.031878142854260015,
+    "params": {
+      "clf__class_weight": "balanced",
+      "clf__max_depth": null,
+      "clf__max_features": "log2",
+      "clf__min_samples_leaf": 5,
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.3820980068419894,
+    "ROC_AUC": 0.7840748668552353,
+    "precision": 0.3685121107266436,
+    "recall": 0.5590551181102362,
+    "F1": 0.44421272158498437,
+    "balanced_accuracy": 0.6909353260454094,
+    "accuracy": 0.7816468660385089,
+    "modelo": "RandomForest",
+    "rango_cv": 3,
+    "AP_CV": 0.38760971301736713,
+    "std_CV": 0.027648455673701573,
+    "params": {
+      "clf__class_weight": "balanced",
+      "clf__max_depth": 20,
+      "clf__max_features": "log2",
+      "clf__min_samples_leaf": 5,
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.3294613787328821,
+    "ROC_AUC": 0.761777896694952,
+    "precision": 0.3333333333333333,
+    "recall": 0.005249343832020997,
+    "F1": 0.0103359173126615,
+    "balanced_accuracy": 0.5016537981296028,
+    "accuracy": 0.8430970913560016,
+    "modelo": "MLP",
+    "rango_cv": 1,
+    "AP_CV": 0.36374679685226663,
+    "std_CV": 0.022639778999127693,
+    "params": {
+      "clf__alpha": 0.001,
+      "clf__hidden_layer_sizes": [
+        32
+      ],
+      "clf__learning_rate_init": 0.03,
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.3520608333450205,
+    "ROC_AUC": 0.7694531508804118,
+    "precision": 0.4666666666666667,
+    "recall": 0.05511811023622047,
+    "F1": 0.09859154929577464,
+    "balanced_accuracy": 0.5217338123996637,
+    "accuracy": 0.8426874231872183,
+    "modelo": "MLP",
+    "rango_cv": 2,
+    "AP_CV": 0.36078723441156346,
+    "std_CV": 0.028509842981869097,
+    "params": {
+      "clf__alpha": 0.1,
+      "clf__hidden_layer_sizes": [
+        128
+      ],
+      "clf__learning_rate_init": 0.001,
+      "pre__num__log__usar_log": false
+    }
+  },
+  {
+    "AP": 0.3532284691451312,
+    "ROC_AUC": 0.7652676910531815,
+    "precision": 0.47058823529411764,
+    "recall": 0.04199475065616798,
+    "F1": 0.07710843373493977,
+    "balanced_accuracy": 0.5166284432892491,
+    "accuracy": 0.8430970913560016,
+    "modelo": "MLP",
+    "rango_cv": 3,
+    "AP_CV": 0.3586503624780863,
+    "std_CV": 0.03207538790870667,
+    "params": {
+      "clf__alpha": 0.1,
+      "clf__hidden_layer_sizes": [
+        64
+      ],
+      "clf__learning_rate_init": 0.01,
+      "pre__num__log__usar_log": false
+    }
+  },
+  {
+    "AP": 0.33089785256924087,
+    "ROC_AUC": 0.7602642509492139,
+    "precision": 0.26851025869759143,
+    "recall": 0.7900262467191601,
+    "F1": 0.4007989347536618,
+    "balanced_accuracy": 0.6959839971459878,
+    "accuracy": 0.631298648095043,
+    "modelo": "SVM",
+    "rango_cv": 1,
+    "AP_CV": 0.3430632025589195,
+    "std_CV": 0.023857748689985157,
+    "params": {
+      "clf__C": 100,
+      "clf__class_weight": "balanced",
+      "clf__gamma": 0.001,
+      "clf__kernel": "rbf",
+      "pre__num__log__usar_log": false
+    }
+  },
+  {
+    "AP": 0.3402588611746726,
+    "ROC_AUC": 0.76853833804755,
+    "precision": 0.2590412111017662,
+    "recall": 0.8083989501312336,
+    "F1": 0.3923566878980892,
+    "balanced_accuracy": 0.6903645236093061,
+    "accuracy": 0.6091765669807456,
+    "modelo": "SVM",
+    "rango_cv": 2,
+    "AP_CV": 0.3427988234667404,
+    "std_CV": 0.020540246687762376,
+    "params": {
+      "clf__C": 1,
+      "clf__class_weight": "balanced",
+      "clf__gamma": 0.01,
+      "clf__kernel": "rbf",
+      "pre__num__log__usar_log": true
+    }
+  },
+  {
+    "AP": 0.33461767986662866,
+    "ROC_AUC": 0.7652205488876996,
+    "precision": 0.26608695652173914,
+    "recall": 0.8031496062992126,
+    "F1": 0.3997387328543436,
+    "balanced_accuracy": 0.6967204342175675,
+    "accuracy": 0.6235149528881606,
+    "modelo": "SVM",
+    "rango_cv": 3,
+    "AP_CV": 0.3418863676813304,
+    "std_CV": 0.02508489166834714,
+    "params": {
+      "clf__C": 100,
+      "clf__class_weight": "balanced",
+      "clf__gamma": 0.001,
+      "clf__kernel": "rbf",
+      "pre__num__log__usar_log": true
+    }
+  }
+]
