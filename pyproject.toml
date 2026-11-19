@@ -17,7 +17,11 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest==9.2.0"]
+dev = [
+    "google-colab-cli>=0.8.0",
+    "keyrings-alt>=5.0.2",
+    "pytest==9.2.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.13,<0.14"]
