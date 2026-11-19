@@ -1,0 +1,33 @@
+{
+  "modelo": "RandomForest",
+  "params": {
+    "clf__class_weight": null,
+    "clf__max_depth": 8,
+    "clf__max_features": 0.7,
+    "clf__min_samples_leaf": 20,
+    "pre__num__log__usar_log": true
+  },
+  "AP_validacion": 0.7414039953316898,
+  "AP_CV": 0.7572728606150834,
+  "semilla": 42,
+  "predictores": [
+    "Administrative",
+    "Administrative_Duration",
+    "Informational",
+    "Informational_Duration",
+    "ProductRelated",
+    "ProductRelated_Duration",
+    "BounceRates",
+    "ExitRates",
+    "PageValues",
+    "Month",
+    "OperatingSystems",
+    "Browser",
+    "Region",
+    "TrafficType",
+    "VisitorType",
+    "Weekend",
+    "SpecialDay"
+  ],
+  "criterio": "Mayor AP de validación entre los tres finalistas por AP-CV de cada familia"
+}

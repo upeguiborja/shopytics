@@ -1,0 +1,100 @@
+[
+  {
+    "rango_cv": 3,
+    "params": {
+      "clf__class_weight": null,
+      "clf__max_depth": 8,
+      "clf__max_features": 0.7,
+      "clf__min_samples_leaf": 20,
+      "pre__num__log__usar_log": true
+    },
+    "AP_CV": 0.7572728606150834,
+    "std_CV": 0.023407988370461923,
+    "AP": 0.7414039953316898,
+    "ROC_AUC": 0.9265002675636419,
+    "precision": 0.7025316455696202,
+    "recall": 0.5826771653543307,
+    "F1": 0.6370157819225251,
+    "balanced_accuracy": 0.7685230486965828,
+    "accuracy": 0.8963539532978287,
+    "modelo": "RandomForest"
+  },
+  {
+    "rango_cv": 3,
+    "params": {
+      "clf__alpha": 0.1,
+      "clf__hidden_layer_sizes": [
+        64
+      ],
+      "clf__learning_rate_init": 0.03,
+      "pre__num__log__usar_log": true
+    },
+    "AP_CV": 0.7375475324718909,
+    "std_CV": 0.034178719729293025,
+    "AP": 0.7224787231125073,
+    "ROC_AUC": 0.9242297989450349,
+    "precision": 0.7160883280757098,
+    "recall": 0.5958005249343832,
+    "F1": 0.6504297994269341,
+    "balanced_accuracy": 0.7760556022730168,
+    "accuracy": 0.9000409668168783,
+    "modelo": "MLP"
+  },
+  {
+    "rango_cv": 2,
+    "params": {
+      "clf__C": 30,
+      "clf__class_weight": null,
+      "clf__gamma": 0.01,
+      "clf__kernel": "rbf",
+      "pre__num__log__usar_log": true
+    },
+    "AP_CV": 0.7259985453336479,
+    "std_CV": 0.03514544996288145,
+    "AP": 0.7054172967034158,
+    "ROC_AUC": 0.9000713503045128,
+    "precision": 0.7012987012987013,
+    "recall": 0.5669291338582677,
+    "F1": 0.6269956458635704,
+    "balanced_accuracy": 0.7611344698417553,
+    "accuracy": 0.8947152806226956,
+    "modelo": "SVM"
+  },
+  {
+    "rango_cv": 3,
+    "params": {
+      "clf__n_neighbors": 81,
+      "clf__p": 2,
+      "clf__weights": "distance",
+      "pre__num__log__usar_log": true
+    },
+    "AP_CV": 0.7171979260600093,
+    "std_CV": 0.023194157038336927,
+    "AP": 0.7018321101166065,
+    "ROC_AUC": 0.9124251458858905,
+    "precision": 0.7265625,
+    "recall": 0.4881889763779528,
+    "F1": 0.5839874411302983,
+    "balanced_accuracy": 0.7271041969268405,
+    "accuracy": 0.8914379352724293,
+    "modelo": "kNN"
+  },
+  {
+    "rango_cv": 1,
+    "params": {
+      "clf__C": 0.1,
+      "clf__class_weight": null,
+      "pre__num__log__usar_log": true
+    },
+    "AP_CV": 0.689678974384505,
+    "std_CV": 0.03196829989325587,
+    "AP": 0.6840864664961273,
+    "ROC_AUC": 0.91231557220396,
+    "precision": 0.7170418006430869,
+    "recall": 0.5853018372703412,
+    "F1": 0.6445086705202312,
+    "balanced_accuracy": 0.7712916953341997,
+    "accuracy": 0.8992216304793118,
+    "modelo": "Regresion_logistica"
+  }
+]

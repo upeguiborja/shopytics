@@ -32,6 +32,7 @@ y alimenta el notebook y el informe LaTeX.
 ├── shopytics/
 │   ├── models.py                            # cinco pipelines de clasificación
 │   ├── search.py                            # mallas de hiperparámetros
+│   ├── training.py                          # búsqueda, selección y ablación
 │   └── utils.py                             # semilla y columnas compartidas
 ├── src/
 │   ├── ejecutar_todo.py                     # orquestador del flujo único
@@ -45,7 +46,9 @@ y alimenta el notebook y el informe LaTeX.
 │   ├── experimentos_reduccion.py            # PCA, UMAP y comparación con la línea base
 │   └── figuras.py                           # figuras del informe y del notebook
 ├── notebooks/
-│   └── proyecto_intencion_compra.ipynb      # notebook único de resultados
+│   ├── 01_analisis_exploratorio.ipynb       # EDA, particiones y candidatas a eliminación
+│   ├── 02_entrenamiento_y_ablacion.ipynb    # codificación, selección y ablación
+│   └── proyecto_intencion_compra.ipynb      # resultados del informe
 ├── tests/
 │   └── test_*.py                            # pruebas unitarias y de integridad
 ├── resultados/                              # salida vigente del flujo único
@@ -153,9 +156,21 @@ Las pruebas de integridad comprueban dimensiones, particiones, ausencia de fuga,
 preprocesador y contratos de las etapas. Las que dependen de `resultados/manifiesto.json`
 se omiten si no existe una ejecución completa.
 
-## Notebook
+## Notebooks de EDA y entrenamiento
 
-El notebook único es `notebooks/proyecto_intencion_compra.ipynb`. Por defecto
+Ejecute `notebooks/01_analisis_exploratorio.ipynb` y después
+`notebooks/02_entrenamiento_y_ablacion.ipynb` con el entorno de uv. El segundo
+lee las particiones y los dos JSON del EDA, guarda las matrices codificadas en
+`data/dataset_particiones_codificadas.pkl` y evalúa los pipelines con validación
+cruzada sobre las columnas originales. En `resultados/entrenamiento/` escribe
+las mallas evaluadas por familia, los finalistas, las configuraciones elegidas,
+el ganador y la comparación de ablación. Use `REENTRENAR = True` para repetir
+las 730 configuraciones y `False` para leer las puntuaciones de una ejecución
+completa con las mismas entradas.
+
+## Notebook de resultados del informe
+
+El notebook de resultados del informe es `notebooks/proyecto_intencion_compra.ipynb`. Por defecto
 `RECALCULAR = False`: lee las tablas y figuras de `resultados/` sin reentrenar. Si se
 establece `RECALCULAR = True`, llama a `ejecutar_todo.main()` y ejecuta el flujo completo.
 
