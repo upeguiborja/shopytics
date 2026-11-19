@@ -1,0 +1,12 @@
+[
+  {
+    "variable_1":"ProductRelated",
+    "variable_2":"ProductRelated_Duration",
+    "correlacion":0.84260931675849
+  },
+  {
+    "variable_1":"BounceRates",
+    "variable_2":"ExitRates",
+    "correlacion":0.898961654783221
+  }
+]
