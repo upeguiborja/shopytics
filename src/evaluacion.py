@@ -32,16 +32,15 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from shopytics.models import construir_modelos, orden_familias
 from proyecto_ml import (
     leer_configuraciones,
-    orden_familias,  # noqa: E402
     CSV,
     RAIZ,
     SEMILLA,
     bootstrap_diferencia,
     bootstrap_ic,
     cargar_datos,
-    construir_modelos,
     metricas,
     particionar,
     predecir,

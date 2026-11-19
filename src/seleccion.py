@@ -17,15 +17,14 @@ import pandas as pd
 from busqueda import (
     buscar_familia,
     evaluar_candidatos_validacion,
-    mallas_ampliadas,
     seleccionar_top_k,
 )
-from proyecto_ml import construir_modelos
+from shopytics.models import mallas_ampliadas
 
 
 def ejecutar_seleccion(X_tr, y_tr, X_va, y_va, salida: Path, rapido: bool = False):
     salida.mkdir(parents=True, exist_ok=True)
-    modelos, mallas = mallas_ampliadas(construir_modelos, rapido=rapido)
+    modelos, mallas = mallas_ampliadas(rapido=rapido)
 
     cv_todos, val_todos = [], []
     for nombre, malla in mallas.items():

@@ -29,9 +29,12 @@ y alimenta el notebook y el informe LaTeX.
 .
 ├── data/
 │   └── online_shoppers_intention.csv        # datos de entrada
+├── shopytics/
+│   ├── models.py                            # cinco pipelines y mallas
+│   └── utils.py                             # semilla y columnas compartidas
 ├── src/
 │   ├── ejecutar_todo.py                     # orquestador del flujo único
-│   ├── proyecto_ml.py                       # carga, auditoría, particiones y pipelines
+│   ├── proyecto_ml.py                       # carga, auditoría, particiones y métricas
 │   ├── busqueda.py                          # validación cruzada y top-3 por familia
 │   ├── seleccion.py                         # configuración final elegida en validación
 │   ├── evaluacion.py                        # métricas, intervalos, umbrales y comparaciones

@@ -9,68 +9,33 @@ from __future__ import annotations
 
 import ast
 import hashlib
-import json
 import platform
-import time
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.compose import ColumnTransformer
-from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
     balanced_accuracy_score,
-    confusion_matrix,
     f1_score,
     precision_score,
     recall_score,
     roc_auc_score,
-    roc_curve,
-    precision_recall_curve,
 )
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
-from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
 
-SEMILLA = 42
+from shopytics.utils import (
+    BINARIAS, ESPECIALES, LOG_VARS, NOMINALES, NUMERICAS, PREDICTORAS, SEMILLA, OBJETIVO,
+)
+from shopytics.models import (
+    TransformadorLog, construir_modelos, construir_preprocesador, orden_familias,
+)
+
 RAIZ = Path(__file__).resolve().parent.parent
 CSV = RAIZ / "data" / "online_shoppers_intention.csv"
-
-NUMERICAS = [
-    "Administrative",
-    "Administrative_Duration",
-    "Informational",
-    "Informational_Duration",
-    "ProductRelated",
-    "ProductRelated_Duration",
-    "BounceRates",
-    "ExitRates",
-    "PageValues",
-]
-LOG_VARS = NUMERICAS
-NOMINALES = [
-    "Month",
-    "OperatingSystems",
-    "Browser",
-    "Region",
-    "TrafficType",
-    "VisitorType",
-]
-BINARIAS = ["Weekend"]
-ESPECIALES = ["SpecialDay"]
-PREDICTORAS = NUMERICAS + NOMINALES + BINARIAS + ESPECIALES
-OBJETIVO = "Revenue"
 
 DIR_RES = RAIZ / "resultados"
 
@@ -201,23 +166,6 @@ def resumen_particiones(y: pd.Series, idx_tr, idx_val, idx_te) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Preprocesamiento
 # ---------------------------------------------------------------------------
-class TransformadorLog(BaseEstimator, TransformerMixin):
-    """Aplica log1p opcionalmente; la decision se ajusta solo con train/CV."""
-
-    def __init__(self, usar_log: bool = True):
-        self.usar_log = usar_log
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        X = np.asarray(X, dtype=float)
-        return np.log1p(X) if self.usar_log else X
-
-    def get_feature_names_out(self, input_features=None):
-        return np.asarray(input_features, dtype=object)
-
-
 class TransformadorUMAP(BaseEstimator, TransformerMixin):
     """Envoltorio de UMAP compatible con Pipeline; se ajusta solo con train."""
 
@@ -271,97 +219,6 @@ def _submuestra_rapida(X_tr, y_tr, semilla=SEMILLA):
     return X_tr.iloc[indices], y_tr.iloc[indices]
 
 
-def _normalizar_excluir(excluir) -> tuple[str, ...]:
-    """Convierte excluir en una tupla validada de predictoras."""
-    if excluir is None:
-        return ()
-    if isinstance(excluir, str):
-        nombres = (excluir,)
-    else:
-        try:
-            nombres = tuple(excluir)
-        except TypeError as exc:
-            raise TypeError("excluir debe ser un iterable de nombres de columna") from exc
-    desconocidas = [c for c in nombres if c not in PREDICTORAS]
-    if desconocidas:
-        raise ValueError(f"Columnas no predictoras en excluir: {desconocidas}")
-    return nombres
-
-
-def construir_preprocesador(
-    usar_log: bool = True,
-    incluir_pagevalues: bool = True,
-    incluir_specialday: bool = True,
-    codificar_specialday: str = "numerico",
-    excluir=None,
-):
-    """Construye el ColumnTransformer; toda la codificacion se ajusta en train.
-
-    excluir generaliza las banderas: los nombres indicados nunca llegan al
-    modelo, ademas de PageValues cuando incluir_pagevalues es False y de
-    SpecialDay cuando incluir_specialday es False. codificar_specialday admite
-    "numerico" (columna estandarizada) y "onehot" (seis niveles dentro del
-    bloque categorico).
-    """
-    if codificar_specialday not in {"numerico", "onehot"}:
-        raise ValueError("codificar_specialday debe ser 'numerico' o 'onehot'")
-    excluidas = set(_normalizar_excluir(excluir))
-    if not incluir_pagevalues:
-        excluidas.add("PageValues")
-    if not incluir_specialday:
-        excluidas.add("SpecialDay")
-    numericas = [c for c in LOG_VARS if c not in excluidas]
-    nominales = [c for c in NOMINALES if c not in excluidas]
-    binarias = [c for c in BINARIAS if c not in excluidas]
-    especiales_numericas = [c for c in ESPECIALES if c not in excluidas]
-    especiales_onehot = []
-    if codificar_specialday == "onehot":
-        especiales_onehot = especiales_numericas
-        especiales_numericas = []
-    categorias = nominales + especiales_onehot
-    num_pipe = Pipeline(
-        [
-            ("imputar", SimpleImputer(strategy="median")),
-            ("log", TransformadorLog(usar_log=usar_log)),
-            ("escalar", StandardScaler()),
-        ]
-    )
-    cat_pipe = Pipeline(
-        [
-            ("imputar", SimpleImputer(strategy="most_frequent")),
-            ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
-        ]
-    )
-    transformadores = []
-    if numericas:
-        transformadores.append(("num", num_pipe, numericas))
-    if categorias:
-        transformadores.append(("cat", cat_pipe, categorias))
-    if binarias:
-        transformadores.append(("bin", "passthrough", binarias))
-    if especiales_numericas:
-        transformadores.append(
-            (
-                "esp",
-                Pipeline(
-                    [
-                        ("imputar", SimpleImputer(strategy="median")),
-                        ("escalar", StandardScaler()),
-                    ]
-                ),
-                especiales_numericas,
-            )
-        )
-    if not transformadores:
-        raise ValueError("El preprocesador no tiene columnas predictoras")
-    return ColumnTransformer(transformadores, remainder="drop")
-
-
-def orden_familias() -> tuple[str, ...]:
-    """Orden estable de las cinco familias, de la basica a la flexible."""
-    return ("Regresion_logistica", "kNN", "RandomForest", "MLP", "SVM")
-
-
 def leer_configuraciones(ruta) -> dict[str, dict]:
     """Lee un CSV con una configuracion por familia (columnas modelo y params).
 
@@ -382,117 +239,6 @@ def leer_configuraciones(ruta) -> dict[str, dict]:
             raise ValueError(f"Los parametros de {fila.modelo} deben ser un diccionario")
         configuraciones[fila.modelo] = params
     return configuraciones
-
-
-def construir_modelos(
-    incluir_pagevalues: bool = True,
-    incluir_specialday: bool = True,
-    codificar_specialday: str = "numerico",
-    excluir=None,
-):
-    """Devuelve (modelos, mallas) con transformacion log1p como hiperparametro."""
-    excluir = _normalizar_excluir(excluir)
-
-    def pre():
-        return construir_preprocesador(
-            incluir_pagevalues=incluir_pagevalues,
-            incluir_specialday=incluir_specialday,
-            codificar_specialday=codificar_specialday,
-            excluir=excluir,
-        )
-
-    modelos = {}
-    mallas = {}
-
-    modelos["Regresion_logistica"] = Pipeline(
-        [
-            ("pre", pre()),
-            ("clf", LogisticRegression(solver="lbfgs", max_iter=3000, random_state=SEMILLA)),
-        ]
-    )
-    mallas["Regresion_logistica"] = {
-        "pre__num__log__usar_log": [True, False],
-        "clf__C": [0.01, 0.1, 1, 10, 100],
-        "clf__class_weight": [None, "balanced"],
-    }
-
-    modelos["kNN"] = Pipeline(
-        [
-            ("pre", pre()),
-            ("clf", KNeighborsClassifier()),
-        ]
-    )
-    mallas["kNN"] = {
-        "pre__num__log__usar_log": [True, False],
-        "clf__n_neighbors": [5, 15, 31, 45, 61, 81, 101],
-        "clf__weights": ["uniform", "distance"],
-        "clf__p": [1, 2],
-    }
-
-    modelos["RandomForest"] = Pipeline(
-        [
-            ("pre", pre()),
-            (
-                "clf",
-                RandomForestClassifier(
-                    n_estimators=300, random_state=SEMILLA, n_jobs=1
-                ),
-            ),
-        ]
-    )
-    mallas["RandomForest"] = {
-        "pre__num__log__usar_log": [True, False],
-        "clf__max_depth": [None, 12, 20, 30],
-        "clf__min_samples_leaf": [1, 5],
-        "clf__max_features": ["sqrt", 0.5],
-        "clf__class_weight": [None, "balanced"],
-    }
-
-    modelos["MLP"] = Pipeline(
-        [
-            ("pre", pre()),
-            (
-                "clf",
-                MLPClassifier(
-                    solver="adam",
-                    max_iter=500,
-                    early_stopping=True,
-                    validation_fraction=0.15,
-                    n_iter_no_change=20,
-                    random_state=SEMILLA,
-                ),
-            ),
-        ]
-    )
-    mallas["MLP"] = {
-        "pre__num__log__usar_log": [True, False],
-        "clf__hidden_layer_sizes": [(32,), (64,), (64, 32)],
-        "clf__alpha": [0.0001, 0.01],
-        "clf__learning_rate_init": [0.001, 0.01, 0.03, 0.1],
-    }
-
-    modelos["SVM"] = Pipeline(
-        [
-            ("pre", pre()),
-            ("clf", SVC(probability=False, random_state=SEMILLA)),
-        ]
-    )
-    mallas["SVM"] = [
-        {
-            "pre__num__log__usar_log": [True, False],
-            "clf__kernel": ["linear"],
-            "clf__C": [0.1, 1, 10, 30, 100],
-            "clf__class_weight": [None, "balanced"],
-        },
-        {
-            "pre__num__log__usar_log": [True, False],
-            "clf__kernel": ["rbf"],
-            "clf__C": [0.1, 1, 10, 30, 100],
-            "clf__gamma": ["scale", 0.01, 0.001],
-            "clf__class_weight": [None, "balanced"],
-        },
-    ]
-    return modelos, mallas
 
 
 def contar_combinaciones(mallas: dict) -> pd.DataFrame:

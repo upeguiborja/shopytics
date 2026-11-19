@@ -24,6 +24,7 @@ from sklearn.base import clone
 from sklearn.metrics import average_precision_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
+from shopytics.models import construir_modelos, orden_familias
 from proyecto_ml import (
     leer_configuraciones,
     CSV,
@@ -31,19 +32,12 @@ from proyecto_ml import (
     SEMILLA,
     _submuestra_rapida,
     cargar_datos,
-    construir_modelos,
     particionar,
     puntuacion,
 )
 
 SALIDA = RAIZ / "resultados"
-FAMILIAS = (
-    "Regresion_logistica",
-    "kNN",
-    "RandomForest",
-    "MLP",
-    "SVM",
-)
+FAMILIAS = orden_familias()
 CODIFICACIONES = ("numerico", "onehot")
 N_FOLDS = 5
 ORDEN_MESES = (

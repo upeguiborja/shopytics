@@ -44,9 +44,10 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, StratifiedShuffleSplit, cross_val_score
 from sklearn.pipeline import Pipeline
 
+from shopytics.models import construir_modelos
 from proyecto_ml import (
     RAIZ, SEMILLA, TransformadorUMAP, bootstrap_diferencia, bootstrap_ic,
-    cargar_datos, construir_modelos, metricas, particionar, predecir, puntuacion,
+    cargar_datos, metricas, particionar, predecir, puntuacion,
 )
 
 DIMENSIONES_UMAP = (2, 5, 10, 15, 20)

@@ -13,8 +13,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from busqueda import buscar_familia, evaluar_candidatos_validacion, mallas_ampliadas, seleccionar_top_k
-from proyecto_ml import RAIZ, cargar_datos, construir_modelos, particionar
+from busqueda import buscar_familia, evaluar_candidatos_validacion, seleccionar_top_k
+from shopytics.models import construir_modelos, mallas_ampliadas
+from proyecto_ml import RAIZ, cargar_datos, particionar
 
 
 def comparar_pagevalues(ruta_base, ruta_sin, salida):

@@ -46,6 +46,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from shopytics.models import construir_modelos
 from proyecto_ml import (  # noqa: E402
     BINARIAS,
     CSV,
@@ -55,7 +56,6 @@ from proyecto_ml import (  # noqa: E402
     SEMILLA,
     _submuestra_rapida,
     cargar_datos,
-    construir_modelos,
     metricas,
     particionar,
     predecir,
