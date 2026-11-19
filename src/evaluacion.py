@@ -54,7 +54,7 @@ METRICAS_CV = {"AP": "average_precision", "ROC_AUC": "roc_auc", "F1": "f1"}
 
 
 def ajustar(nombre, params, X_tr, y_tr, incluir_pagevalues=True, incluir_specialday=True):
-    modelos, _ = construir_modelos(
+    modelos = construir_modelos(
         incluir_pagevalues=incluir_pagevalues, incluir_specialday=incluir_specialday
     )
     m = clone(modelos[nombre]).set_params(**params)
@@ -116,7 +116,7 @@ def validacion_cruzada(configuraciones, X, y, n_splits=N_FOLDS_CV, semilla=SEMIL
     if n_splits < 2:
         raise ValueError("n_splits debe ser al menos 2")
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=semilla)
-    modelos, _ = construir_modelos()
+    modelos = construir_modelos()
     filas = []
     for nombre, params in configuraciones.items():
         modelo = clone(modelos[nombre]).set_params(**params)

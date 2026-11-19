@@ -295,7 +295,7 @@ def ejecutar_eliminacion(
     filas_cv, filas_val = [], []
     for nombre, params in configuraciones:
         for variante, excluir in variantes:
-            modelos, _ = construir_modelos(excluir=excluir)
+            modelos = construir_modelos(excluir=excluir)
             modelo = modelos[nombre].set_params(**params)
             valores = cross_val_score(
                 modelo,

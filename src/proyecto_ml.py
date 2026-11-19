@@ -30,8 +30,9 @@ from sklearn.model_selection import train_test_split
 from shopytics.utils import (
     BINARIAS, ESPECIALES, LOG_VARS, NOMINALES, NUMERICAS, PREDICTORAS, SEMILLA, OBJETIVO,
 )
+from shopytics.search import modelos_y_mallas as construir_modelos
 from shopytics.models import (
-    TransformadorLog, construir_modelos, construir_preprocesador, orden_familias,
+    TransformadorLog, construir_preprocesador, orden_familias,
 )
 
 RAIZ = Path(__file__).resolve().parent.parent

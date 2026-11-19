@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
-from shopytics.models import mallas_ampliadas
+from shopytics.search import mallas_ampliadas
 from shopytics.utils import SEMILLA
 from proyecto_ml import metricas, predecir, puntuacion
 

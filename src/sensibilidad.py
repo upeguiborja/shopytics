@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 
 from busqueda import buscar_familia, evaluar_candidatos_validacion, seleccionar_top_k
-from shopytics.models import construir_modelos, mallas_ampliadas
+from shopytics.search import mallas_ampliadas, modelos_y_mallas
 from proyecto_ml import RAIZ, cargar_datos, particionar
 
 
@@ -35,7 +35,7 @@ def ejecutar_sensibilidad(X_tr, y_tr, X_va, y_va, salida: Path, rapido=False, n_
     salida = Path(salida)
     salida.mkdir(parents=True, exist_ok=True)
     modelos, mallas = mallas_ampliadas(
-        partial(construir_modelos, incluir_pagevalues=False), rapido=rapido
+        partial(modelos_y_mallas, incluir_pagevalues=False), rapido=rapido
     )
     cv_todos, validacion_todos = [], []
     for nombre, malla in mallas.items():

@@ -237,18 +237,15 @@ def test_ejecutar_eliminacion_pasa_excluir_y_escribe_tablas(tmp_path, monkeypatc
     def constructor(excluir=None):
         excluidas = list(excluir or [])
         llamadas.append(excluidas)
-        return (
-            {
-                nombre: Pipeline(
-                    [
-                        ("quitar", QuitarColumnas(excluidas)),
-                        ("clf", LogisticRegression(max_iter=500, random_state=42)),
-                    ]
-                )
-                for nombre in ("RandomForest", "MLP")
-            },
-            {},
-        )
+        return {
+            nombre: Pipeline(
+                [
+                    ("quitar", QuitarColumnas(excluidas)),
+                    ("clf", LogisticRegression(max_iter=500, random_state=42)),
+                ]
+            )
+            for nombre in ("RandomForest", "MLP")
+        }
 
     monkeypatch.setattr(av, "construir_modelos", constructor)
     ruta = tmp_path / "mejores.csv"
@@ -303,7 +300,7 @@ def test_eliminacion_rechaza_variable_ausente(tmp_path, monkeypatch):
     tabla = _tabla_analisis(["NoExiste", "Administrative"], [0.1, 0.7])
     ruta = tmp_path / "mejores.csv"
     _csv_configuraciones(ruta)
-    monkeypatch.setattr(av, "construir_modelos", lambda excluir=None: ({}, {}))
+    monkeypatch.setattr(av, "construir_modelos", lambda excluir=None: {})
 
     with pytest.raises(ValueError, match="NoExiste"):
         av.ejecutar_eliminacion(X, y, X, y, tabla, ruta, tmp_path)
@@ -428,18 +425,15 @@ def test_ejecutar_analisis_rapido_usa_dos_folds_y_submuestra(tmp_path, monkeypat
     )
 
     def constructor(excluir=None):
-        return (
-            {
-                nombre: Pipeline(
-                    [
-                        ("quitar", QuitarColumnas(excluir)),
-                        ("clf", LogisticRegression(max_iter=300, random_state=42)),
-                    ]
-                )
-                for nombre in ("RandomForest", "MLP")
-            },
-            {},
-        )
+        return {
+            nombre: Pipeline(
+                [
+                    ("quitar", QuitarColumnas(excluir)),
+                    ("clf", LogisticRegression(max_iter=300, random_state=42)),
+                ]
+            )
+            for nombre in ("RandomForest", "MLP")
+        }
 
     monkeypatch.setattr(av, "construir_modelos", constructor)
     _csv_configuraciones(tmp_path / "mejores.csv")

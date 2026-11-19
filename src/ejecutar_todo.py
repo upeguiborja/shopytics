@@ -52,7 +52,7 @@ def main(rapido=False, desde="datos", hasta="figuras"):
     def seleccionar():
         from seleccion import ejecutar_seleccion
         ejecutar_seleccion(X_tr, y_tr, X_va, y_va, salida, rapido=rapido)
-        from shopytics.models import mallas_ampliadas
+        from shopytics.search import mallas_ampliadas
         from proyecto_ml import contar_combinaciones
         _, mallas = mallas_ampliadas(rapido=rapido)
         contar_combinaciones(mallas).to_csv(salida / "combinaciones_malla.csv", index=False)

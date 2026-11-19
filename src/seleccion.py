@@ -19,7 +19,7 @@ from busqueda import (
     evaluar_candidatos_validacion,
     seleccionar_top_k,
 )
-from shopytics.models import mallas_ampliadas
+from shopytics.search import mallas_ampliadas
 
 
 def ejecutar_seleccion(X_tr, y_tr, X_va, y_va, salida: Path, rapido: bool = False):

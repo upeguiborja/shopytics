@@ -68,7 +68,7 @@ def cargar_configuraciones(ruta):
     if not np.isfinite(tabla["AP"]).all() or len(tabla) < 2:
         raise ValueError("Se requieren al menos dos familias con AP de validacion finita")
     tabla = tabla.sort_values(["AP", "modelo"], ascending=[False, True]).head(2)
-    modelos, _ = construir_modelos()
+    modelos = construir_modelos()
     seleccion = []
     for fila in tabla.itertuples(index=False):
         if fila.modelo not in modelos:

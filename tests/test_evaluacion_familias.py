@@ -56,7 +56,7 @@ def test_validacion_cruzada_usa_cinco_folds_estratificados(monkeypatch):
     monkeypatch.setattr(evaluacion, "cross_validate", fake_cross_validate)
     monkeypatch.setattr(
         evaluacion, "construir_modelos",
-        lambda: ({"RandomForest": LogisticRegression()}, {}),
+        lambda: {"RandomForest": LogisticRegression()},
     )
     tabla = evaluacion.validacion_cruzada(
         {"RandomForest": {}}, pd.DataFrame({"x": [0, 1, 2, 3, 4]}),
@@ -78,7 +78,7 @@ def test_validacion_cruzada_usa_cinco_folds_estratificados(monkeypatch):
 def test_validacion_cruzada_real_produce_intervalos(monkeypatch):
     monkeypatch.setattr(
         evaluacion, "construir_modelos",
-        lambda: ({"RandomForest": LogisticRegression(max_iter=1000)}, {}),
+        lambda: {"RandomForest": LogisticRegression(max_iter=1000)},
     )
     rng = np.random.RandomState(0)
     X = pd.DataFrame({"x": rng.normal(size=60)})

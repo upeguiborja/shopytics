@@ -69,7 +69,7 @@ def _validar_configuraciones(configuraciones) -> dict[str, dict]:
 
 def _construir_modelo(nombre, params, codificar_specialday="numerico", incluir_specialday=True):
     """Pipeline con parametros fijos; el preprocesador se ajusta dentro de el."""
-    modelos, _ = construir_modelos(
+    modelos = construir_modelos(
         incluir_specialday=incluir_specialday,
         codificar_specialday=codificar_specialday,
     )

@@ -30,7 +30,8 @@ y alimenta el notebook y el informe LaTeX.
 ├── data/
 │   └── online_shoppers_intention.csv        # datos de entrada
 ├── shopytics/
-│   ├── models.py                            # cinco pipelines y mallas
+│   ├── models.py                            # cinco pipelines de clasificación
+│   ├── search.py                            # mallas de hiperparámetros
 │   └── utils.py                             # semilla y columnas compartidas
 ├── src/
 │   ├── ejecutar_todo.py                     # orquestador del flujo único
