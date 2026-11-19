@@ -6,6 +6,7 @@
     "v_cramer":null,
     "auc_univariado":0.86636197466429,
     "informacion_mutua":0.165086626129168,
+    "indice_fisher":0.477511285246317,
     "recomendacion":"mantener"
   },
   {
@@ -15,6 +16,7 @@
     "v_cramer":null,
     "auc_univariado":0.710125943444904,
     "informacion_mutua":0.042920157764389,
+    "indice_fisher":0.275206065634852,
     "recomendacion":"mantener"
   },
   {
@@ -24,6 +26,7 @@
     "v_cramer":null,
     "auc_univariado":0.66887476480143,
     "informacion_mutua":0.03166446115234,
+    "indice_fisher":0.070239176738793,
     "recomendacion":"mantener"
   },
   {
@@ -33,6 +36,7 @@
     "v_cramer":null,
     "auc_univariado":0.658200248522366,
     "informacion_mutua":0.029646618094756,
+    "indice_fisher":0.07402859241105,
     "recomendacion":"mantener"
   },
   {
@@ -42,6 +46,7 @@
     "v_cramer":null,
     "auc_univariado":0.625788789916608,
     "informacion_mutua":0.015744505824688,
+    "indice_fisher":0.062171455129718,
     "recomendacion":"mantener"
   },
   {
@@ -51,6 +56,7 @@
     "v_cramer":0.177351181798475,
     "auc_univariado":0.625123943108452,
     "informacion_mutua":0.016061541846475,
+    "indice_fisher":null,
     "recomendacion":"mantener"
   },
   {
@@ -60,6 +66,7 @@
     "v_cramer":null,
     "auc_univariado":0.620179012441669,
     "informacion_mutua":0.013560548298928,
+    "indice_fisher":0.021747869264729,
     "recomendacion":"mantener"
   },
   {
@@ -69,6 +76,7 @@
     "v_cramer":0.171861634157132,
     "auc_univariado":0.61596325035589,
     "informacion_mutua":0.014714510921699,
+    "indice_fisher":null,
     "recomendacion":"mantener"
   },
   {
@@ -78,6 +86,7 @@
     "v_cramer":null,
     "auc_univariado":0.61240865954839,
     "informacion_mutua":0.026787645547295,
+    "indice_fisher":0.137678013360221,
     "recomendacion":"mantener"
   },
   {
@@ -87,6 +96,7 @@
     "v_cramer":null,
     "auc_univariado":0.557870157666095,
     "informacion_mutua":0.006737830085119,
+    "indice_fisher":0.025835168347138,
     "recomendacion":"revisar"
   },
   {
@@ -96,6 +106,7 @@
     "v_cramer":null,
     "auc_univariado":0.556317034243215,
     "informacion_mutua":0.005062203375817,
+    "indice_fisher":0.014156336082898,
     "recomendacion":"revisar"
   },
   {
@@ -105,6 +116,7 @@
     "v_cramer":0.082207109126504,
     "auc_univariado":0.543572699860471,
     "informacion_mutua":0.003570096682119,
+    "indice_fisher":null,
     "recomendacion":"eliminar o combinar"
   },
   {
@@ -114,6 +126,7 @@
     "v_cramer":null,
     "auc_univariado":0.538846887320977,
     "informacion_mutua":0.009269218815901,
+    "indice_fisher":0.043823197632977,
     "recomendacion":"eliminar o combinar"
   },
   {
@@ -123,6 +136,7 @@
     "v_cramer":0.095367343067569,
     "auc_univariado":0.537468210200726,
     "informacion_mutua":0.004115755403406,
+    "indice_fisher":null,
     "recomendacion":"eliminar o combinar"
   },
   {
@@ -132,6 +146,7 @@
     "v_cramer":0.065460645482933,
     "auc_univariado":0.515296777832597,
     "informacion_mutua":0.002231811513247,
+    "indice_fisher":null,
     "recomendacion":"eliminar o combinar"
   },
   {
@@ -141,6 +156,7 @@
     "v_cramer":0.03545360170578,
     "auc_univariado":0.510515549611878,
     "informacion_mutua":0.000633263837059,
+    "indice_fisher":null,
     "recomendacion":"eliminar o combinar"
   },
   {
@@ -150,6 +166,7 @@
     "v_cramer":0.021968414917276,
     "auc_univariado":0.503756674267474,
     "informacion_mutua":0.00024688172493,
+    "indice_fisher":null,
     "recomendacion":"eliminar o combinar"
   }
 ]
